@@ -1,0 +1,5 @@
+BasedOnStyle: Google
+IndentCaseLabels: false
+PointerBindsToType: false
+Standard: Cpp11
+IndentWidth: 2
