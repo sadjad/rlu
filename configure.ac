@@ -4,8 +4,11 @@
 AC_PREREQ([2.68])
 AC_INIT([rlu], [0.01], [sadjad@cs.stanford.edu])
 AM_INIT_AUTOMAKE([foreign])
-AC_CONFIG_SRCDIR([src/address.hh])
+AC_CONFIG_SRCDIR([src/rlu.hh])
 AC_CONFIG_HEADERS([config.h])
+
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+AC_SUBST(ARFLAGS, [cr])
 
 # Add picky CXXFLAGS
 CXX17_FLAGS="-std=c++17 -pthread"
@@ -27,5 +30,6 @@ AC_TYPE_UINT16_T
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 src/Makefile
+                 tests/Makefile])
 AC_OUTPUT
