@@ -30,5 +30,8 @@ class Object {
     void* copy{nullptr};
 };
 
+extern Global global;
+extern thread_local Thread thread;
+
 }  // namespace metadata
 }  // namespace rlu
