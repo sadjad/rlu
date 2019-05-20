@@ -9,14 +9,16 @@
 #include <thread>
 #include <vector>
 
-namespace rlu {
-namespace context {
-
+namespace rlu
+{
+namespace context
+{
 using Pointer = void*;
 
 class Thread;
 
-class Global {
+class Global
+{
 public:
   std::atomic<uint64_t> clock{0};
   std::vector<std::unique_ptr<Thread>> threads{};
@@ -25,16 +27,16 @@ public:
   ~Global();
 };
 
-class Thread {
+class Thread
+{
 private:
   struct WriteLogEntry {
-    std::thread::id thread_id{std::this_thread::get_id()};
-
     size_t object_size{0};
     void* pointer{nullptr};
     void* copy{nullptr};
   };
 
+  const size_t thread_id_;
   std::shared_ptr<Global> global_context_;
 
   uint64_t local_clock_{0};
@@ -44,30 +46,34 @@ private:
   std::vector<WriteLogEntry> write_log_{};
 
 public:
-  Thread(const std::shared_ptr<Global>& global_context);
+  Thread( const size_t thread_id,
+          const std::shared_ptr<Global>& global_context );
   ~Thread();
+
+  size_t thread_id() const { return thread_id_; }
 
   void reader_lock();
   void reader_unlock();
 
-  Pointer dereference(Pointer obj);
-  Pointer try_lock(Pointer obj);
+  Pointer dereference( Pointer obj );
+  Pointer try_lock( Pointer obj );
 
-  bool compare_objects(Pointer obj1, Pointer obj_2);
-  void assign(Pointer handle, Pointer obj);
+  bool compare_objects( Pointer obj1, Pointer obj_2 );
+  void assign( Pointer handle, Pointer obj );
   void commit_write_log();
   void synchronize();
   void swap_write_logs();
-  void abort(Pointer obj);
+  void abort( Pointer obj );
 };
 
-class Object {
+class Object
+{
 private:
   void* copy_{nullptr};
 };
 
-Pointer alloc(const size_t len);
-void free(Pointer ptr);
+Pointer alloc( const size_t len );
+void free( Pointer ptr );
 
 }  // namespace context
 }  // namespace rlu
