@@ -23,8 +23,7 @@ public:
   std::atomic<uint64_t> clock{0};
   std::vector<std::unique_ptr<Thread>> threads{};
 
-  Global();
-  ~Global();
+  Global() {}
 };
 
 class Thread
@@ -37,7 +36,7 @@ private:
   };
 
   const size_t thread_id_;
-  std::shared_ptr<Global> global_context_;
+  Global& global_context_;
 
   uint64_t local_clock_{0};
   uint64_t run_count_{0};
@@ -46,8 +45,7 @@ private:
   std::vector<WriteLogEntry> write_log_{};
 
 public:
-  Thread( const size_t thread_id,
-          const std::shared_ptr<Global>& global_context );
+  Thread( const size_t thread_id, Global& global_context );
   ~Thread();
 
   size_t thread_id() const { return thread_id_; }
