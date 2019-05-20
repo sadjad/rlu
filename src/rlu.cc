@@ -1,5 +1,7 @@
 #include "rlu.hh"
 
-namespace rlu {
-namespace metadata {}
-}  // namespace rlu
+using namespace std;
+using namespace rlu::metadata;
+
+Thread::Thread(const shared_ptr<Global>& global_context)
+    : global_context_(global_context) {}

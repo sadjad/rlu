@@ -38,6 +38,7 @@ private:
   std::shared_ptr<Global> global_context_;
 
   uint64_t local_clock_{0};
+  uint64_t run_count_{0};
   uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
 
   std::vector<WriteLogEntry> write_log_{};
