@@ -7,7 +7,7 @@ namespace rlu {
 namespace list {
 
 template <class T>
-class Node {
+struct Node {
   T value;
   Node<T>* next{nullptr};
 };
@@ -22,8 +22,10 @@ public:
 
   size_t len() const;
 
-  void add( context::Thread& thread_ctx, T val );
-  void erase( context::Thread& thread_ctx, T val );
+  void add( context::Thread& thread_ctx, T value );
+  void erase( context::Thread& thread_ctx, T value );
+
+  Node<T>* head() { return head_; }
 };
 
 }  // namespace list

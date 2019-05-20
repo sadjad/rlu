@@ -59,7 +59,7 @@ public:
   void commit_write_log();
   void synchronize();
   void swap_write_logs();
-  void abort( Pointer obj );
+  void abort();
 };
 
 class Object {
