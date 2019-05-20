@@ -10,9 +10,10 @@
 #include <vector>
 
 namespace rlu {
-namespace context {
 
 using Pointer = void*;
+
+namespace context {
 
 class Thread;
 
@@ -66,10 +67,11 @@ private:
   void* copy_{nullptr};
 };
 
+}  // namespace context
+
 Pointer alloc( const size_t len );
 void free( Pointer ptr );
 
-}  // namespace context
 }  // namespace rlu
 
 #endif /* RLU_HH */
