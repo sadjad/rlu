@@ -1,6 +1,8 @@
+#include <iostream>
 #include <memory>
 #include <thread>
 
+#include "list.hh"
 #include "rlu.hh"
 
 using namespace std;
@@ -10,18 +12,19 @@ const size_t NUM_THREADS = 10;
 int main( const int, char*[] )
 {
   vector<thread> threads;
-  rlu::context::Global global_context;
+
+  rlu::List<int32_t> list;
+  rlu::context::Global global_ctx;
 
   for ( size_t i = 0; i < NUM_THREADS; i++ ) {
-    global_context.threads.emplace_back(
-        make_unique<rlu::context::Thread>( i, global_context ) );
+    global_ctx.threads.emplace_back(
+        make_unique<rlu::context::Thread>( i, global_ctx ) );
   }
 
   for ( size_t i = 0; i < NUM_THREADS; i++ ) {
     threads.emplace_back(
-        [&global_context]( const size_t thread_id ) {
-          auto& context = global_context.threads[thread_id];
-          context->thread_id();
+        [&global_ctx, &list]( const size_t thread_id ) {
+          auto& thread_ctx = global_ctx.threads[thread_id];
         },
         i );
   }

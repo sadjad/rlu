@@ -13,6 +13,10 @@ namespace rlu {
 
 using Pointer = void*;
 
+struct ObjectHeader {
+  Pointer copy{nullptr};
+};
+
 namespace context {
 
 class Thread;
@@ -34,8 +38,9 @@ private:
   };
 
   const size_t thread_id_;
-  Global& global_context_;
+  Global& global_ctx_;
 
+  bool is_writer_{false};
   uint64_t local_clock_{0};
   uint64_t run_count_{0};
   uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
@@ -62,15 +67,14 @@ public:
   void abort();
 };
 
-class Object {
-private:
-  void* copy_{nullptr};
-};
-
 }  // namespace context
+
+namespace mem {
 
 Pointer alloc( const size_t len );
 void free( Pointer ptr );
+
+}  // namespace mem
 
 }  // namespace rlu
 
