@@ -48,7 +48,7 @@ private:
   std::vector<WriteLogEntry> write_log_{};
 
 public:
-  Thread( const size_t thread_id, Global& global_context );
+  Thread(const size_t thread_id, Global& global_context);
   ~Thread();
 
   size_t thread_id() const { return thread_id_; }
@@ -56,11 +56,11 @@ public:
   void reader_lock();
   void reader_unlock();
 
-  Pointer dereference( Pointer obj );
-  Pointer try_lock( Pointer obj );
+  Pointer dereference(Pointer obj);
+  Pointer try_lock(Pointer obj);
 
-  bool compare_objects( Pointer obj1, Pointer obj_2 );
-  void assign( Pointer handle, Pointer obj );
+  bool compare_objects(Pointer obj1, Pointer obj_2);
+  void assign(Pointer handle, Pointer obj);
   void commit_write_log();
   void synchronize();
   void swap_write_logs();
@@ -71,8 +71,8 @@ public:
 
 namespace mem {
 
-Pointer alloc( const size_t len );
-void free( Pointer ptr );
+Pointer alloc(const size_t len);
+void free(Pointer ptr);
 
 }  // namespace mem
 

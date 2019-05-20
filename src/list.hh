@@ -22,8 +22,8 @@ public:
 
   size_t len() const;
 
-  void add( context::Thread& thread_ctx, T value );
-  void erase( context::Thread& thread_ctx, T value );
+  void add(context::Thread& thread_ctx, T value);
+  void erase(context::Thread& thread_ctx, T value);
 
   Node<T>* head() { return head_; }
 };
