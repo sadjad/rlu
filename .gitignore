@@ -1,5 +1,7 @@
 *.a
 *.o
+*.log
+*.trs
 Makefile
 Makefile.in
 /aclocal.m4
@@ -17,3 +19,4 @@ Makefile.in
 /stamp-h1
 /compile
 /test-driver
+/tests/linked-list
