@@ -9,29 +9,37 @@ namespace rlu {
 namespace metadata {
 
 class Global {
-    std::atomic<uint64_t> clock{0};
+private:
+  std::atomic<uint64_t> clock_{0};
+
+public:
+  Global();
+  ~Global();
 };
 
 class Thread {
-    struct WriteLogEntry {
-        std::thread::id thread_id{std::this_thread::get_id()};
-        void* pointer{nullptr};
-        size_t object_size{0};
-        void* copy{nullptr};
-    };
+private:
+  struct WriteLogEntry {
+    std::thread::id thread_id{std::this_thread::get_id()};
+    void* pointer{nullptr};
+    size_t object_size{0};
+    void* copy{nullptr};
+  };
 
-    uint64_t local_clock{0};
-    uint64_t write_clock{std::numeric_limits<uint64_t>::max()};
+  uint64_t local_clock_{0};
+  uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
 
-    std::vector<WriteLogEntry> write_log{};
+  std::vector<WriteLogEntry> write_log_{};
+
+public:
+  Thread();
+  ~Thread();
 };
 
 class Object {
-    void* copy{nullptr};
+private:
+  void* copy_{nullptr};
 };
-
-extern Global global;
-extern thread_local Thread thread;
 
 }  // namespace metadata
 }  // namespace rlu
