@@ -2,4 +2,5 @@ BasedOnStyle: Google
 IndentCaseLabels: false
 PointerBindsToType: false
 Standard: Cpp11
-IndentWidth: 4
+IndentWidth: 2
+AccessModifierOffset: -2
