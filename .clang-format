@@ -5,4 +5,4 @@ Standard: Cpp11
 IndentWidth: 2
 AccessModifierOffset: -2
 SpacesInParentheses: true
-BreakBeforeBraces: Linux
+BreakBeforeBraces: Stroustrup

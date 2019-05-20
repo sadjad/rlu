@@ -9,16 +9,14 @@
 #include <thread>
 #include <vector>
 
-namespace rlu
-{
-namespace context
-{
+namespace rlu {
+namespace context {
+
 using Pointer = void*;
 
 class Thread;
 
-class Global
-{
+class Global {
 public:
   std::atomic<uint64_t> clock{0};
   std::vector<std::unique_ptr<Thread>> threads{};
@@ -26,8 +24,7 @@ public:
   Global() {}
 };
 
-class Thread
-{
+class Thread {
 private:
   struct WriteLogEntry {
     size_t object_size{0};
@@ -64,8 +61,7 @@ public:
   void abort( Pointer obj );
 };
 
-class Object
-{
+class Object {
 private:
   void* copy_{nullptr};
 };
