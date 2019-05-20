@@ -10,7 +10,7 @@
 #include <vector>
 
 namespace rlu {
-namespace metadata {
+namespace context {
 
 using Pointer = void*;
 
@@ -69,7 +69,7 @@ private:
 Pointer alloc(const size_t len);
 void free(Pointer ptr);
 
-}  // namespace metadata
+}  // namespace context
 }  // namespace rlu
 
 #endif /* RLU_HH */
