@@ -3,4 +3,4 @@ AM_CXXFLAGS = $(PICKY_CXXFLAGS)
 
 noinst_LIBRARIES = librlu.a
 
-librlu_a_SOURCES = rlu.hh rlu.cc
+librlu_a_SOURCES = rlu.hh rlu.cc list.hh list.cc
