@@ -3,11 +3,27 @@
 #ifndef RLU_HH
 #define RLU_HH
 
+#include <array>
 #include <atomic>
 #include <limits>
 #include <memory>
 #include <thread>
 #include <vector>
+
+#define SPECIAL_CONSTANT ((void*)0x1020304050607080)
+#define WRITE_LOG_SIZE 1'000'000  // 1 MB
+
+#define OBJ_HEADER(obj)                                          \
+  reinterpret_cast<ObjectHeader*>(reinterpret_cast<char*>(obj) - \
+                                  sizeof(ObjectHeader))
+
+#define WS_HEADER(obj)                                                  \
+  reinterpret_cast<WriteLogEntryHeader*>(reinterpret_cast<char*>(obj) - \
+                                         sizeof(WriteLogEntryHeader))
+
+#define GET_COPY(obj) OBJ_HEADER(obj)->copy
+#define IS_UNLOCKED(obj) (OBJ_HEADER(obj)->copy == nullptr)
+#define IS_COPY(obj) (obj == SPECIAL_CONSTANT)
 
 namespace rlu {
 
@@ -15,6 +31,15 @@ using Pointer = void*;
 
 struct ObjectHeader {
   Pointer copy{nullptr};
+};
+
+struct WriteLogEntryHeader {
+  uint64_t thread_id{0};
+  uint64_t object_size{0};
+  Pointer pointer{nullptr};
+
+  // must be the last one
+  Pointer copy{SPECIAL_CONSTANT};
 };
 
 namespace context {
@@ -31,13 +56,7 @@ public:
 
 class Thread {
 private:
-  struct WriteLogEntry {
-    size_t object_size{0};
-    void* pointer{nullptr};
-    void* copy{nullptr};
-  };
-
-  const size_t thread_id_;
+  const uint64_t thread_id_;
   Global& global_ctx_;
 
   bool is_writer_{false};
@@ -45,7 +64,8 @@ private:
   uint64_t run_count_{0};
   uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
 
-  std::vector<WriteLogEntry> write_log_{};
+  size_t write_log_pos_{0};
+  uint8_t write_log_[WRITE_LOG_SIZE];
 
 public:
   Thread(const size_t thread_id, Global& global_context);

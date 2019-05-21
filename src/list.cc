@@ -1,6 +1,7 @@
 #include "list.hh"
 
 using namespace std;
+using namespace rlu;
 using namespace rlu::list;
 
 template <class T>
@@ -8,8 +9,8 @@ List<T>::List()
 {
   // creating a min-node and a max-node
   constexpr size_t NODE_LEN = sizeof(Node<T>);
-  head_ = rlu::alloc(NODE_LEN);
-  Node<T>* tail = rlu::alloc(NODE_LEN);
+  head_ = mem::alloc(NODE_LEN);
+  Node<T>* tail = mem::alloc(NODE_LEN);
 
   head_->value = numeric_limits<T>::min();
   head_->next = tail;
@@ -40,7 +41,7 @@ restart:
       goto restart;
     }
 
-    Node<T>* node = rlu::alloc(sizeof(Node<T>));
+    Node<T>* node = mem::alloc(sizeof(Node<T>));
     node->value = value;
     thread_ctx.assign(node->next, next);
     thread_ctx.assign(prev->next, node);

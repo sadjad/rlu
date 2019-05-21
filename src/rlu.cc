@@ -7,10 +7,6 @@ using namespace std;
 using namespace rlu;
 using namespace rlu::context;
 
-#define HEADER(x)                                                \
-  reinterpret_cast<ObjectHeader*>(reinterpret_cast<char*>(ptr) - \
-                                  sizeof(ObjectHeader))
-
 Pointer mem::alloc(const size_t len)
 {
   auto ptr =
@@ -30,7 +26,7 @@ void mem::free(Pointer ptr)
     return;
   }
 
-  free(HEADER(ptr));
+  free(OBJ_HEADER(ptr));
 }
 
 Thread::Thread(const size_t thread_id, Global& global_context)
@@ -58,4 +54,29 @@ void Thread::reader_unlock()
   }
 }
 
-Pointer Thread::dereference(Pointer obj) {}
+Pointer Thread::dereference(Pointer ptr)
+{
+  auto ptr_copy = GET_COPY(ptr);
+
+  if (IS_UNLOCKED(ptr_copy)) {
+    return ptr;  // it's free
+  }
+
+  if (IS_COPY(ptr_copy)) {
+    return ptr;  // it's already a copy
+  }
+
+  const WriteLogEntryHeader* ws_header = WS_HEADER(ptr_copy);
+
+  if (ws_header->thread_id == thread_id_) {
+    return ptr_copy; // it's locked by us!
+  }
+
+  const auto &other_ctx = global_ctx_.threads[thread_id_];
+  if (other_ctx->write_clock_ <= local_clock_) {
+    return ptr_copy; /* let's steal this copy */
+  }
+  else {
+    return ptr;/* no stealing */
+  }
+}
