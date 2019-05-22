@@ -58,6 +58,15 @@ public:
 
 class Thread {
 private:
+  struct WriteLog {
+    size_t pos{0};
+    std::array<uint8_t, WRITE_LOG_SIZE> log;
+
+    Pointer append_log(const size_t len, void* buffer);
+    void write_back();
+    void unlock(); /* XXX fuck is this? */
+  };
+
   const uint64_t thread_id_;
   Global& global_ctx_;
 
@@ -66,10 +75,8 @@ private:
   uint64_t run_count_{0};
   uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
 
-  size_t write_log_pos_{0};
-  std::array<uint8_t, WRITE_LOG_SIZE> write_log_{};
-
-  Pointer append_log(const size_t len, void* buffer);
+  WriteLog write_log_{};
+  WriteLog write_log_quiesce_{};
 
 public:
   Thread(const size_t thread_id, Global& global_context);
@@ -83,8 +90,8 @@ public:
   Pointer dereference(Pointer obj);
   Pointer try_lock(Pointer obj, const size_t size);
 
-  bool compare_objects(Pointer obj1, Pointer obj_2);
-  void assign(Pointer handle, Pointer obj);
+  bool compare_objects(Pointer obj1, Pointer obj2);
+  void assign(Pointer& handle, Pointer obj);
   void commit_write_log();
   void synchronize();
   void swap_write_logs();

@@ -39,16 +39,16 @@ Thread::Thread(const size_t thread_id, Global& global_context)
 
 Thread::~Thread() { cerr << "~Thread(" << thread_id_ << ")" << endl; }
 
-Pointer Thread::append_log(const size_t len, void* buffer)
+Pointer Thread::WriteLog::append_log(const size_t len, void* buffer)
 {
-  if (len + write_log_pos_ >= write_log_.size()) {
+  if (len + pos >= log.size()) {
     /* log full */
     throw runtime_error("write log full");
   }
 
-  Pointer start = write_log_.data();
-  memcpy(write_log_.data() + write_log_pos_, buffer, len);
-  write_log_pos_ += len;
+  Pointer start = log.data();
+  memcpy(log.data() + pos, buffer, len);
+  pos += len;
 
   return start;
 }
@@ -118,9 +118,29 @@ Pointer Thread::try_lock(Pointer ptr, const size_t size)
   entry.actual = ptr;
   entry.object_size = sizeof(ptr);
 
-  append_log(sizeof(entry), &entry);
+  write_log_.append_log(sizeof(entry), &entry);
 
-  /* TODO get a lock on ptr */
+  /* XXX get a lock on ptr */
 
-  return append_log(size, ptr);
+  return write_log_.append_log(size, ptr);
+}
+
+bool Thread::compare_objects(Pointer obj1, Pointer obj2)
+{
+  return GET_ACTUAL(obj1) == GET_ACTUAL(obj2);
+}
+
+void Thread::assign(Pointer& handle, Pointer obj) { handle = GET_ACTUAL(obj); }
+
+void Thread::commit_write_log()
+{
+  write_clock_ = global_ctx_.clock.load(memory_order_consume) + 1;
+  global_ctx_.clock.fetch_add(1);
+
+  synchronize();
+  write_log_.write_back();
+  write_log_.unlock();
+
+  write_clock_ = numeric_limits<uint64_t>::max();
+  swap_write_logs();
 }
