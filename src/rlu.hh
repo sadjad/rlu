@@ -25,6 +25,8 @@
 #define IS_UNLOCKED(obj) (OBJ_HEADER(obj)->copy == nullptr)
 #define IS_COPY(obj) (obj == SPECIAL_CONSTANT)
 
+#define GET_ACTUAL(obj) (IS_COPY(obj) ? (WS_HEADER(obj)->actual) : obj)
+
 namespace rlu {
 
 using Pointer = void*;
@@ -36,7 +38,7 @@ struct ObjectHeader {
 struct WriteLogEntryHeader {
   uint64_t thread_id{0};
   uint64_t object_size{0};
-  Pointer pointer{nullptr};
+  Pointer actual{nullptr};
 
   // must be the last one
   Pointer copy{SPECIAL_CONSTANT};
@@ -65,7 +67,9 @@ private:
   uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
 
   size_t write_log_pos_{0};
-  uint8_t write_log_[WRITE_LOG_SIZE];
+  std::array<uint8_t, WRITE_LOG_SIZE> write_log_{};
+
+  Pointer append_log(const size_t len, void* buffer);
 
 public:
   Thread(const size_t thread_id, Global& global_context);
@@ -77,7 +81,7 @@ public:
   void reader_unlock();
 
   Pointer dereference(Pointer obj);
-  Pointer try_lock(Pointer obj);
+  Pointer try_lock(Pointer obj, const size_t size);
 
   bool compare_objects(Pointer obj1, Pointer obj_2);
   void assign(Pointer handle, Pointer obj);
