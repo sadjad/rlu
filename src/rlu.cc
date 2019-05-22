@@ -144,3 +144,5 @@ void Thread::commit_write_log()
   write_clock_ = numeric_limits<uint64_t>::max();
   swap_write_logs();
 }
+
+void Thread::swap_write_logs() { swap(write_log_, write_log_quiesce_); }
