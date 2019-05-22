@@ -64,7 +64,6 @@ private:
 
     Pointer append_log(const size_t len, void* buffer);
     void write_back();
-    void unlock(); /* XXX fuck is this? */
   };
 
   const uint64_t thread_id_;
@@ -93,8 +92,9 @@ public:
   bool compare_objects(Pointer obj1, Pointer obj2);
   void assign(Pointer& handle, Pointer obj);
   void commit_write_log();
-  void synchronize();
+  void unlock_write_log();
   void swap_write_logs();
+  void synchronize();
   void abort();
 };
 
