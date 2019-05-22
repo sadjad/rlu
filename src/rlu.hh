@@ -82,6 +82,8 @@ public:
   ~Thread();
 
   size_t thread_id() const { return thread_id_; }
+  uint64_t run_count() const { return run_count_; }
+  uint64_t write_clock() const { return write_clock_; }
 
   void reader_lock();
   void reader_unlock();
