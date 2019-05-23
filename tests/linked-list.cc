@@ -1,6 +1,6 @@
 #include <iostream>
 #include <memory>
-#include <sstream>
+#include <random>
 #include <thread>
 
 #include "list.hh"
@@ -9,6 +9,15 @@
 using namespace std;
 
 constexpr size_t NUM_THREADS = 128;
+
+int32_t randint()
+{
+  static random_device dev;
+  static mt19937 rng{dev()};
+  static uniform_int_distribution<int32_t> distribution{-2048, 2048};
+
+  return distribution(rng);
+}
 
 int main(const int, char*[])
 {
@@ -26,52 +35,49 @@ int main(const int, char*[])
     threads.emplace_back(
         [&global_ctx, &list](const size_t thread_id, const bool is_reader) {
           auto& thread_ctx = *global_ctx.threads[thread_id];
-          ostringstream oss;
 
-          this_thread::sleep_for(chrono::milliseconds{10 * thread_id / 8});
+          this_thread::sleep_for(chrono::milliseconds{100 * thread_id / 8});
 
           if (is_reader) {
-            thread_ctx.reader_lock();
+            for (size_t i = 0; i < 1000; i++) {
+              thread_ctx.reader_lock();
 
-            oss << "[read:" << thread_id << "]";
-            auto current = list.head();
+              int32_t val = numeric_limits<int32_t>::min();
 
-            int32_t val = numeric_limits<int32_t>::min();
+              for (auto node = list.head(); node; node = node->next) {
+                node = thread_ctx.dereference(node);
 
-            while (current != nullptr) {
-              current = thread_ctx.dereference(current);
-              oss << " " << current->value;
+                if (node->value < val) {
+                  throw runtime_error("inconsistent list");
+                }
 
-              if (current->value < val) {
+                val = node->value;
+              }
+
+              if (val != numeric_limits<int32_t>::max()) {
                 throw runtime_error("inconsistent list");
               }
 
-              val = current->value;
-              current = current->next;
+              thread_ctx.reader_unlock();
+
+              if (i % 100 == 0) cerr << 'R';
             }
-
-            oss << endl;
-            cerr << oss.str();
-
-            if (val != numeric_limits<int32_t>::max()) {
-              throw runtime_error("inconsistent list");
-            }
-
-            thread_ctx.reader_unlock();
           }
           else /* it's a writer */ {
-            list.add(thread_ctx, 8 * thread_id);
-            list.add(thread_ctx, 8 * thread_id + 2);
-            list.add(thread_ctx, 8 * thread_id + 4);
-            list.add(thread_ctx, 8 * thread_id + 6);
+            for (int i = 0; i < 1000; i++) {
+              list.add(thread_ctx, randint());
+              if (i % 100 == 0) cerr << 'W';
+            }
           }
         },
-        i, i % 2);
+        i, i % 32);
   }
 
   for (size_t i = 0; i < NUM_THREADS; i++) {
     threads[i].join();
   }
+
+  cerr << endl;
 
   return EXIT_SUCCESS;
 }
