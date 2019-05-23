@@ -51,7 +51,7 @@ bool Thread::compare_objects(Pointer obj1, Pointer obj2)
 void Thread::writeback_write_log()
 {
   uint8_t* dataPtr = write_log_.log.data();
-  uint8_t* end = dataPtr + write_log_.pos;
+  const uint8_t* end = dataPtr + write_log_.pos;
 
   while (dataPtr < end) {
     auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
@@ -59,7 +59,7 @@ void Thread::writeback_write_log()
     dataPtr += sizeof(WriteLogEntryHeader);
 
     memcpy(header->actual, dataPtr, header->object_size);
-    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlocking the object
+    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlock the object
 
     dataPtr += header->object_size;
   }
@@ -74,7 +74,7 @@ void Thread::unlock_write_log()
     auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
     dataPtr += sizeof(WriteLogEntryHeader) + header->object_size;
 
-    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlocking the object  }
+    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlocking the object
   }
 }
 
@@ -94,7 +94,8 @@ void Thread::swap_write_logs() { swap(write_log_, write_log_quiesce_); }
 
 void Thread::synchronize()
 {
-  vector<uint64_t> sync_counts{global_ctx_.threads.size(), 0};
+  vector<uint64_t> sync_counts;
+  sync_counts.resize(global_ctx_.threads.size(), 0);
 
   for (const auto& thread : global_ctx_.threads) {
     sync_counts[thread->thread_id()] = thread->run_count();

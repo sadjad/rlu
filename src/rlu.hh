@@ -154,7 +154,8 @@ bool Thread::try_lock(T*& original_ptr)
   if (IS_LOCKED(ptr_copy)) {
     const auto wl_header = WL_HEADER(ptr_copy);
     if (wl_header->thread_id == thread_id_) {
-      return ptr_copy;  // it's locked by us, let's send our copy
+      original_ptr = ptr_copy;  // it's locked by us, let's send our copy
+      return true;
     }
 
     this->abort();
