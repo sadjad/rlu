@@ -15,11 +15,11 @@
 #define SPECIAL_CONSTANT ((void*)0x1020304050607080)
 #define WRITE_LOG_SIZE 1'000'000  // 1 MB
 
-#define OBJ_HEADER(obj)                                             \
+#define OBJ_HEADER(obj)                                              \
   (reinterpret_cast<ObjectHeader*>(reinterpret_cast<uint8_t*>(obj) - \
                                    sizeof(ObjectHeader)))
 
-#define WL_HEADER(obj)                                                     \
+#define WL_HEADER(obj)                                                      \
   (reinterpret_cast<WriteLogEntryHeader*>(reinterpret_cast<uint8_t*>(obj) - \
                                           sizeof(WriteLogEntryHeader)))
 
@@ -68,7 +68,10 @@ private:
     size_t pos{0};
     std::array<uint8_t, WRITE_LOG_SIZE> log;
 
-    Pointer append_log(const size_t len, void* buffer);
+    template <class T>
+    T* append_header(const uint64_t thread_id, T* ptr);
+
+    void append_log(const size_t len, void* buffer);
   };
 
   const uint64_t thread_id_;
@@ -152,13 +155,7 @@ T* Thread::try_lock(T* ptr, const size_t size)
     this->abort();
   }
 
-  WriteLogEntryHeader entry;
-  entry.thread_id = thread_id_;
-  entry.actual = ptr;
-  entry.object_size = sizeof(ptr);
-
-  ptr_copy = reinterpret_cast<T*>(write_log_.append_log(sizeof(entry), &entry));
-
+  ptr_copy = write_log_.append_header(thread_id_, ptr);
   void* expected = nullptr;
 
   if (!OBJ_HEADER(ptr)->copy.compare_exchange_weak(expected, ptr_copy)) {
@@ -167,6 +164,23 @@ T* Thread::try_lock(T* ptr, const size_t size)
 
   write_log_.append_log(size, ptr);
   return ptr_copy;
+}
+
+template <class T>
+T* Thread::WriteLog::append_header(const uint64_t thread_id, T* ptr)
+{
+  if (pos + sizeof(WriteLogEntryHeader) >= log.size()) {
+    throw std::runtime_error("write log full");
+  }
+
+  auto wl_header = new (log.data() + pos) WriteLogEntryHeader{};
+  wl_header->thread_id = thread_id;
+  wl_header->actual = ptr;
+  wl_header->object_size = sizeof(T);
+
+  pos += sizeof(WriteLogEntryHeader);
+
+  return reinterpret_cast<T*>(log.data() + pos);
 }
 
 }  // namespace context

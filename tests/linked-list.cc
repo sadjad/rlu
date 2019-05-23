@@ -8,7 +8,7 @@
 
 using namespace std;
 
-constexpr size_t NUM_THREADS = 1;
+constexpr size_t NUM_THREADS = 5;
 
 int main(const int, char*[])
 {
@@ -28,26 +28,32 @@ int main(const int, char*[])
           auto& thread_ctx = *global_ctx.threads[thread_id];
           ostringstream oss;
 
+          if (thread_id == 2) {
+            this_thread::sleep_for(1s);
+          }
+
           if (reader) {
             thread_ctx.reader_lock();
 
             auto current = list.head();
-            oss << "[read, " << thread_id << "]";
 
+            oss << "[read:" << thread_id << "]";
             while (current != nullptr) {
               current = thread_ctx.dereference(current);
               oss << " " << current->value;
               current = current->next;
             }
+            oss << endl;
 
-            cerr << oss.str() << endl;
+            cerr << oss.str();
 
             thread_ctx.reader_unlock();
           }
-          else {
+          else /* it's a writer */ {
+            list.add(thread_ctx, 10);
           }
         },
-        i, true);
+        i, (i != 4));
   }
 
   for (size_t i = 0; i < NUM_THREADS; i++) {

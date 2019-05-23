@@ -26,7 +26,7 @@ Thread::Thread(const size_t thread_id, Global& global_context)
 
 Thread::~Thread() { cerr << "~Thread(" << thread_id_ << ")" << endl; }
 
-Pointer Thread::WriteLog::append_log(const size_t len, void* buffer)
+void Thread::WriteLog::append_log(const size_t len, void* buffer)
 {
   if (len + pos >= log.size()) {
     /* log full */
@@ -35,8 +35,6 @@ Pointer Thread::WriteLog::append_log(const size_t len, void* buffer)
 
   memcpy(log.data() + pos, buffer, len);
   pos += len;
-
-  return log.data() + pos;
 }
 
 void Thread::reader_lock()
