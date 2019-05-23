@@ -117,7 +117,5 @@ void Thread::abort()
     unlock_write_log();
   }
 
-  throw runtime_error("X");
-
   /* XXX retry!? */
 }
