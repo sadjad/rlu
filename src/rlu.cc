@@ -31,7 +31,7 @@ void Thread::reader_lock()
   is_writer_ = false;
   run_count_++;
 
-  local_clock_ = global_ctx_.clock.load(memory_order_consume);
+  local_clock_ = global_ctx_.clock.load();
 }
 
 void Thread::reader_unlock()
@@ -59,7 +59,7 @@ void Thread::writeback_write_log()
     dataPtr += sizeof(WriteLogEntryHeader);
 
     memcpy(header->actual, dataPtr, header->object_size);
-    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlock the object
+    OBJ_HEADER(header->actual)->copy.store(nullptr);  // Unlock the object
 
     dataPtr += header->object_size;
   }
@@ -74,13 +74,13 @@ void Thread::unlock_write_log()
     auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
     dataPtr += sizeof(WriteLogEntryHeader) + header->object_size;
 
-    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlocking the object
+    OBJ_HEADER(header->actual)->copy.store(nullptr);  // Unlock the object
   }
 }
 
 void Thread::commit_write_log()
 {
-  write_clock_ = global_ctx_.clock.load(memory_order_consume) + 1;
+  write_clock_ = global_ctx_.clock.load() + 1;
   global_ctx_.clock.fetch_add(1);
 
   synchronize();

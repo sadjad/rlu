@@ -27,9 +27,9 @@
 #define GET_COPY(obj) \
   (reinterpret_cast<decltype(obj)>(OBJ_HEADER(obj)->copy.load()))
 
-#define GET_ACTUAL(obj)                                                    \
-  (reinterpret_cast<decltype(obj)>(IS_COPY(obj) ? (WL_HEADER(obj)->actual) \
-                                                : obj))
+#define GET_ACTUAL(obj)             \
+  (reinterpret_cast<decltype(obj)>( \
+      IS_COPY(GET_COPY(obj)) ? (WL_HEADER(obj)->actual) : obj))
 
 #define IS_UNLOCKED(obj) (obj == nullptr)
 #define IS_LOCKED(obj) (obj != nullptr)
