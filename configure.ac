@@ -16,6 +16,12 @@ PICKY_CXXFLAGS="-pedantic -Wall -Wextra -Weffc++ -Werror"
 AC_SUBST([CXX17_FLAGS])
 AC_SUBST([PICKY_CXXFLAGS])
 
+AC_ARG_ENABLE([sanitize],
+  [AS_HELP_STRING([--enable-sanitize],
+     [build with address and undefined-behavior santizers])],
+  [EXTRA_CXXFLAGS="-fsanitize=address -fsanitize=undefined -fuse-ld=gold"],
+  [sanitize=false])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_RANLIB
