@@ -28,7 +28,7 @@ int main(const int, char*[])
           auto& thread_ctx = *global_ctx.threads[thread_id];
           ostringstream oss;
 
-          if (thread_id == 2) {
+          if (thread_id % 2) {
             this_thread::sleep_for(1s);
           }
 
@@ -51,6 +51,8 @@ int main(const int, char*[])
           }
           else /* it's a writer */ {
             list.add(thread_ctx, 10);
+            list.add(thread_ctx, 15);
+            list.add(thread_ctx, 5);
           }
         },
         i, (i != 4));
