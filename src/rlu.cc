@@ -60,6 +60,7 @@ void Thread::writeback_write_log()
 
     memcpy(header->actual, dataPtr, header->object_size);
     OBJ_HEADER(header->actual)->copy.store(nullptr);  // Unlock the object
+    header->~WriteLogEntryHeader();
 
     dataPtr += header->object_size;
   }
