@@ -20,9 +20,8 @@ List<T>::List()
 // This code is from Listing (2)
 
 template <class T>
-void List<T>::add(rlu::context::Thread& thread_ctx, T value)
+void List<T>::add(rlu::context::Thread& thread_ctx, const T value)
 {
-restart:
   thread_ctx.reader_lock();
 
   auto prev = thread_ctx.dereference(head_);
@@ -36,7 +35,7 @@ restart:
   if (next->value != value) {
     if (!thread_ctx.try_lock(prev) || !thread_ctx.try_lock(next)) {
       thread_ctx.abort();
-      goto restart;
+      add(thread_ctx, value);
     }
 
     auto node = mem::alloc<Node<T>>();
@@ -49,7 +48,38 @@ restart:
 }
 
 template <class T>
-bool List<T>::contains(context::Thread& thread_ctx, T value)
+bool List<T>::erase(context::Thread& thread_ctx, const T value)
+{
+  bool found = false;
+  thread_ctx.reader_lock();
+
+  auto prev = thread_ctx.dereference(head_);
+  auto next = thread_ctx.dereference(prev->next);
+
+  while (next->value < value) {
+    prev = next;
+    next = thread_ctx.dereference(prev->next);
+  }
+
+  if (next->value == value) {
+    if (!thread_ctx.try_lock(prev) || !thread_ctx.try_lock(next)) {
+      thread_ctx.abort();
+      erase(thread_ctx, value);
+    }
+
+    found = true;
+
+    auto node = thread_ctx.dereference(next->next);
+    thread_ctx.assign(prev->next, node);
+    mem::free(next);
+  }
+
+  thread_ctx.reader_unlock();
+  return found;
+}
+
+template <class T>
+bool List<T>::contains(context::Thread& thread_ctx, const T value)
 {
   thread_ctx.reader_lock();
 
