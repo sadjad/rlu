@@ -16,6 +16,7 @@ List<T>::List()
 template <class T>
 void List<T>::add(rlu::context::Thread& thread_ctx, const T value)
 {
+restart:
   thread_ctx.reader_lock();
 
   auto prev = thread_ctx.dereference(head_);
@@ -29,7 +30,7 @@ void List<T>::add(rlu::context::Thread& thread_ctx, const T value)
   if (next->value != value) {
     if (!thread_ctx.try_lock(prev) || !thread_ctx.try_lock(next)) {
       thread_ctx.abort();
-      return add(thread_ctx, value);
+      goto restart;
     }
 
     auto node = mem::alloc<Node<T>>(value);
@@ -43,6 +44,7 @@ void List<T>::add(rlu::context::Thread& thread_ctx, const T value)
 template <class T>
 bool List<T>::erase(context::Thread& thread_ctx, const T value)
 {
+restart:
   bool found = false;
   thread_ctx.reader_lock();
 
@@ -57,7 +59,7 @@ bool List<T>::erase(context::Thread& thread_ctx, const T value)
   if (next->value == value) {
     if (!thread_ctx.try_lock(prev) || !thread_ctx.try_lock(next)) {
       thread_ctx.abort();
-      return erase(thread_ctx, value);
+      goto restart;
     }
 
     found = true;
