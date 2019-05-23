@@ -13,29 +13,10 @@
 #include <thread>
 #include <vector>
 
-#define SPECIAL_CONSTANT ((void*)0x1020304050607080)
-#define WRITE_LOG_SIZE 1'000'000  // 1 MB
-
-#define OBJ_HEADER(obj)                                              \
-  (reinterpret_cast<ObjectHeader*>(reinterpret_cast<uint8_t*>(obj) - \
-                                   sizeof(ObjectHeader)))
-
-#define WL_HEADER(obj)                                                      \
-  (reinterpret_cast<WriteLogEntryHeader*>(reinterpret_cast<uint8_t*>(obj) - \
-                                          sizeof(WriteLogEntryHeader)))
-
-#define GET_COPY(obj) \
-  (reinterpret_cast<decltype(obj)>(OBJ_HEADER(obj)->copy.load()))
-
-#define GET_ACTUAL(obj)             \
-  (reinterpret_cast<decltype(obj)>( \
-      IS_COPY(GET_COPY(obj)) ? (WL_HEADER(obj)->actual) : obj))
-
-#define IS_UNLOCKED(obj) (obj == nullptr)
-#define IS_LOCKED(obj) (obj != nullptr)
-#define IS_COPY(obj) (obj == SPECIAL_CONSTANT)
-
 namespace rlu {
+
+constexpr intptr_t SPECIAL_CONSTANT = 0x1020304050607080ull;
+constexpr size_t WRITE_LOG_SIZE = 1024 * 1024;  // 1 MB
 
 using Pointer = void*;
 
@@ -49,8 +30,42 @@ struct WriteLogEntryHeader {
   Pointer actual{nullptr};
 
   // must be the last one
-  ObjectHeader copy{SPECIAL_CONSTANT};
+  ObjectHeader copy{reinterpret_cast<void*>(SPECIAL_CONSTANT)};
 };
+
+namespace util {
+
+template <class T> inline ObjectHeader* object_header(T* obj)
+{
+  return reinterpret_cast<ObjectHeader*>(reinterpret_cast<uint8_t*>(obj) -
+                                         sizeof(ObjectHeader));
+}
+
+template <class T> inline WriteLogEntryHeader* writelog_header(T* obj)
+{
+  return reinterpret_cast<WriteLogEntryHeader*>(
+      reinterpret_cast<uint8_t*>(obj) - sizeof(WriteLogEntryHeader));
+}
+
+template <class T> inline T* get_copy(T* obj)
+{
+  return reinterpret_cast<T*>(object_header(obj)->copy.load());
+}
+
+template <class T> inline bool is_copy(T* obj)
+{
+  return obj == reinterpret_cast<void*>(SPECIAL_CONSTANT);
+}
+
+template <class T> inline T* get_actual(T* obj)
+{
+  return reinterpret_cast<T*>(
+      is_copy(get_copy(obj)) ? (writelog_header(obj)->actual) : obj);
+}
+
+template <class T> inline bool is_unlocked(T* obj) { return obj == nullptr; }
+
+}  // namespace util
 
 namespace context {
 
@@ -70,11 +85,8 @@ private:
     size_t pos{0};
     std::array<uint8_t, WRITE_LOG_SIZE> log;
 
-    template <class T>
-    T* append_header(const uint64_t thread_id, T* ptr);
-
-    template <class T>
-    void append_log(T* obj);
+    template <class T> T* append_header(const uint64_t thread_id, T* ptr);
+    template <class T> void append_log(T* obj);
   };
 
   const uint64_t thread_id_;
@@ -99,14 +111,9 @@ public:
   void reader_lock();
   void reader_unlock();
 
-  template <class T>
-  T* dereference(T* obj);
-
-  template <class T>
-  bool try_lock(T*& obj);
-
-  template <class T>
-  void assign(T*& handle, T* obj);
+  template <class T> T* dereference(T* obj);
+  template <class T> bool try_lock(T*& obj);
+  template <class T> void assign(T*& handle, T* obj);
 
   bool compare_objects(Pointer obj1, Pointer obj2);
   void commit_write_log();
@@ -117,21 +124,19 @@ public:
   void abort();
 };
 
-template <class T>
-void Thread::assign(T*& handle, T* obj)
+template <class T> void Thread::assign(T*& handle, T* obj)
 {
-  handle = GET_ACTUAL(obj);
+  handle = util::get_actual(obj);
 }
 
-template <class T>
-T* Thread::dereference(T* ptr)
+template <class T> T* Thread::dereference(T* ptr)
 {
-  auto ptr_copy = GET_COPY(ptr);
+  auto ptr_copy = util::get_copy(ptr);
 
-  if (IS_UNLOCKED(ptr_copy)) return ptr;  // it's free
-  if (IS_COPY(ptr_copy)) return ptr;      // it's already a copy
+  if (util::is_unlocked(ptr_copy)) return ptr;  // it's free
+  if (util::is_copy(ptr_copy)) return ptr;      // it's already a copy
 
-  if (WL_HEADER(ptr_copy)->thread_id == thread_id_)
+  if (util::writelog_header(ptr_copy)->thread_id == thread_id_)
     return ptr_copy;  // locked by us
 
   if (global_ctx_.threads[thread_id_]->write_clock_ <= local_clock_) {
@@ -142,17 +147,16 @@ T* Thread::dereference(T* ptr)
   }
 }
 
-template <class T>
-bool Thread::try_lock(T*& original_ptr)
+template <class T> bool Thread::try_lock(T*& original_ptr)
 {
   is_writer_ = true;
 
   T* ptr = original_ptr;
-  ptr = GET_ACTUAL(ptr);          // read the actual object
-  auto ptr_copy = GET_COPY(ptr);  // read the copy
+  ptr = util::get_actual(ptr);          // read the actual object
+  auto ptr_copy = util::get_copy(ptr);  // read the copy
 
-  if (IS_LOCKED(ptr_copy)) {
-    const auto wl_header = WL_HEADER(ptr_copy);
+  if (!util::is_unlocked(ptr_copy)) {
+    const auto wl_header = util::writelog_header(ptr_copy);
     if (wl_header->thread_id == thread_id_) {
       original_ptr = ptr_copy;  // it's locked by us, let's send our copy
       return true;
@@ -163,9 +167,9 @@ bool Thread::try_lock(T*& original_ptr)
   }
 
   ptr_copy = write_log_.append_header(thread_id_, ptr);
-  void* expected = nullptr;
+  void* expt = nullptr;
 
-  if (!OBJ_HEADER(ptr)->copy.compare_exchange_weak(expected, ptr_copy)) {
+  if (!util::object_header(ptr)->copy.compare_exchange_weak(expt, ptr_copy)) {
     this->abort();
     return false;
   }
@@ -193,8 +197,7 @@ T* Thread::WriteLog::append_header(const uint64_t thread_id, T* ptr)
   return reinterpret_cast<T*>(log.data() + pos);
 }
 
-template <class T>
-void Thread::WriteLog::append_log(T* obj)
+template <class T> void Thread::WriteLog::append_log(T* obj)
 {
   if (pos + sizeof(T) >= log.size()) {
     throw std::runtime_error("write log full");
@@ -208,8 +211,7 @@ void Thread::WriteLog::append_log(T* obj)
 
 namespace mem {
 
-template <class T>
-T* alloc()
+template <class T> T* alloc()
 {
   auto ptr =
       reinterpret_cast<uint8_t*>(malloc(sizeof(ObjectHeader) + sizeof(T)));

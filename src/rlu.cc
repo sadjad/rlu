@@ -15,8 +15,8 @@ void mem::free(Pointer ptr)
     return;
   }
 
-  OBJ_HEADER(ptr)->~ObjectHeader();
-  free(OBJ_HEADER(ptr));
+  util::object_header(ptr)->~ObjectHeader();
+  free(util::object_header(ptr));
 }
 
 Thread::Thread(const size_t thread_id, Global& global_context)
@@ -45,7 +45,7 @@ void Thread::reader_unlock()
 
 bool Thread::compare_objects(Pointer obj1, Pointer obj2)
 {
-  return GET_ACTUAL(obj1) == GET_ACTUAL(obj2);
+  return util::get_actual(obj1) == util::get_actual(obj2);
 }
 
 void Thread::writeback_write_log()
@@ -59,7 +59,7 @@ void Thread::writeback_write_log()
     dataPtr += sizeof(WriteLogEntryHeader);
 
     memcpy(header->actual, dataPtr, header->object_size);
-    OBJ_HEADER(header->actual)->copy.store(nullptr);  // Unlock the object
+    util::object_header(header->actual)->copy.store(nullptr);  // Unlock the object
     header->~WriteLogEntryHeader();
 
     dataPtr += header->object_size;
@@ -75,7 +75,7 @@ void Thread::unlock_write_log()
     auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
     dataPtr += sizeof(WriteLogEntryHeader) + header->object_size;
 
-    OBJ_HEADER(header->actual)->copy.store(nullptr);  // Unlock the object
+    util::object_header(header->actual)->copy.store(nullptr);  // Unlock the object
   }
 }
 
@@ -118,6 +118,4 @@ void Thread::abort()
     unlock_write_log();
     write_log_.pos = 0;
   }
-
-  /* XXX retry!? */
 }
