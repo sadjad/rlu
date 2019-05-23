@@ -15,12 +15,12 @@
 #define SPECIAL_CONSTANT ((void*)0x1020304050607080)
 #define WRITE_LOG_SIZE 1'000'000  // 1 MB
 
-#define OBJ_HEADER(obj)                                           \
-  (reinterpret_cast<ObjectHeader*>(reinterpret_cast<char*>(obj) - \
+#define OBJ_HEADER(obj)                                             \
+  (reinterpret_cast<ObjectHeader*>(reinterpret_cast<uint8_t*>(obj) - \
                                    sizeof(ObjectHeader)))
 
-#define WL_HEADER(obj)                                                   \
-  (reinterpret_cast<WriteLogEntryHeader*>(reinterpret_cast<char*>(obj) - \
+#define WL_HEADER(obj)                                                     \
+  (reinterpret_cast<WriteLogEntryHeader*>(reinterpret_cast<uint8_t*>(obj) - \
                                           sizeof(WriteLogEntryHeader)))
 
 #define GET_COPY(obj) \
@@ -47,7 +47,7 @@ struct WriteLogEntryHeader {
   Pointer actual{nullptr};
 
   // must be the last one
-  std::atomic<Pointer> copy{SPECIAL_CONSTANT};
+  ObjectHeader copy{SPECIAL_CONSTANT};
 };
 
 namespace context {
@@ -114,13 +114,13 @@ public:
 template <class T>
 void Thread::assign(T*& handle, T* obj)
 {
-  handle = reinterpret_cast<T*>(GET_ACTUAL(obj));
+  handle = GET_ACTUAL(obj);
 }
 
 template <class T>
 T* Thread::dereference(T* ptr)
 {
-  auto ptr_copy = reinterpret_cast<T*>(GET_COPY(ptr));
+  auto ptr_copy = GET_COPY(ptr);
 
   if (IS_UNLOCKED(ptr_copy)) return ptr;  // it's free
   if (IS_COPY(ptr_copy)) return ptr;      // it's already a copy

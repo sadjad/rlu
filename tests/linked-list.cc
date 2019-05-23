@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <thread>
 
 #include "list.hh"
@@ -21,34 +22,25 @@ int main(const int, char*[])
         make_unique<rlu::context::Thread>(i, global_ctx));
   }
 
-  auto x = list.head();
-  while (x != nullptr) {
-    cout << x->value << endl;
-    x = x->next;
-  }
-
-  return 0;
-
   for (size_t i = 0; i < NUM_THREADS; i++) {
     threads.emplace_back(
         [&global_ctx, &list](const size_t thread_id, const bool reader) {
           auto& thread_ctx = *global_ctx.threads[thread_id];
+          ostringstream oss;
 
           if (reader) {
             thread_ctx.reader_lock();
 
-            cout << list.head() << endl;
-
-            auto current = thread_ctx.dereference(list.head());
-
-            cout << current << endl;
+            auto current = list.head();
+            oss << "[read, " << thread_id << "]";
 
             while (current != nullptr) {
-              cerr << "Thread(" << thread_id << ") [read] " << current->value
-                   << endl;
-
-              current = thread_ctx.dereference(current->next);
+              current = thread_ctx.dereference(current);
+              oss << " " << current->value;
+              current = current->next;
             }
+
+            cerr << oss.str() << endl;
 
             thread_ctx.reader_unlock();
           }
