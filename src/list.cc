@@ -29,7 +29,7 @@ void List<T>::add(rlu::context::Thread& thread_ctx, const T value)
   if (next->value != value) {
     if (!thread_ctx.try_lock(prev) || !thread_ctx.try_lock(next)) {
       thread_ctx.abort();
-      add(thread_ctx, value);
+      return add(thread_ctx, value);
     }
 
     auto node = mem::alloc<Node<T>>(value);
@@ -57,7 +57,7 @@ bool List<T>::erase(context::Thread& thread_ctx, const T value)
   if (next->value == value) {
     if (!thread_ctx.try_lock(prev) || !thread_ctx.try_lock(next)) {
       thread_ctx.abort();
-      erase(thread_ctx, value);
+      return erase(thread_ctx, value);
     }
 
     found = true;
