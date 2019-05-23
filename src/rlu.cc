@@ -114,6 +114,7 @@ void Thread::abort()
   run_count_++;
   if (is_writer_) {
     unlock_write_log();
+    write_log_.pos = 0;
   }
 
   /* XXX retry!? */

@@ -166,7 +166,8 @@ bool Thread::try_lock(T*& original_ptr)
   void* expected = nullptr;
 
   if (!OBJ_HEADER(ptr)->copy.compare_exchange_weak(expected, ptr_copy)) {
-    throw std::runtime_error("compare-exchange failed");
+    this->abort();
+    return false;
   }
 
   write_log_.append_log(ptr);
