@@ -26,6 +26,7 @@ public:
 
   void add(context::Thread& thread_ctx, T value);
   void erase(context::Thread& thread_ctx, T value);
+  bool contains(context::Thread& thread_ctx, T value);
 
   NodePtr head() { return head_; }
 };

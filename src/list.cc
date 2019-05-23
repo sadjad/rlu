@@ -47,3 +47,17 @@ restart:
 
   thread_ctx.reader_unlock();
 }
+
+template <class T>
+bool List<T>::contains(context::Thread& thread_ctx, T value)
+{
+  thread_ctx.reader_lock();
+
+  for (auto node = head_; node != nullptr; node = node->next) {
+    node = thread_ctx.dereference(node);
+    if (node->value == value) return true;
+  }
+
+  thread_ctx.reader_unlock();
+  return false;
+}

@@ -7,4 +7,3 @@ AccessModifierOffset: -2
 SpacesInParentheses: false
 BreakBeforeBraces: Stroustrup
 AllowShortFunctionsOnASingleLine: All
-AlwaysBreakTemplateDeclarations: MultiLine
