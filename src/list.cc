@@ -34,8 +34,8 @@ restart:
   }
 
   if (next->value != value) {
-    if (!thread_ctx.try_lock(prev, sizeof(Node<T>)) or
-        !thread_ctx.try_lock(next, sizeof(Node<T>))) {
+    if (!thread_ctx.try_lock(prev) or
+        !thread_ctx.try_lock(next)) {
       thread_ctx.abort();
       goto restart;
     }

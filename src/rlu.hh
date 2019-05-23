@@ -100,7 +100,7 @@ public:
   T* dereference(T* obj);
 
   template <class T>
-  T* try_lock(T* obj, const size_t size);
+  T* try_lock(T* obj);
 
   template <class T>
   void assign(T*& handle, T* obj);
@@ -140,7 +140,7 @@ T* Thread::dereference(T* ptr)
 }
 
 template <class T>
-T* Thread::try_lock(T* ptr, const size_t size)
+T* Thread::try_lock(T* ptr)
 {
   is_writer_ = true;
   ptr = GET_ACTUAL(ptr);          // read the actual object
@@ -162,7 +162,7 @@ T* Thread::try_lock(T* ptr, const size_t size)
     throw std::runtime_error("compare-exchange failed");
   }
 
-  write_log_.append_log(size, ptr);
+  write_log_.append_log(sizeof(T), ptr);
   return ptr_copy;
 }
 
