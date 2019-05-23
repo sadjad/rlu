@@ -9,19 +9,6 @@ using namespace std;
 using namespace rlu;
 using namespace rlu::context;
 
-Pointer mem::alloc(const size_t len)
-{
-  auto ptr =
-      reinterpret_cast<ObjectHeader*>(malloc(sizeof(ObjectHeader) + len));
-
-  if (ptr != nullptr) {
-    ptr->copy = nullptr;
-    return (ptr + sizeof(ObjectHeader));
-  }
-
-  return ptr;
-}
-
 void mem::free(Pointer ptr)
 {
   if (ptr == nullptr) {
@@ -69,72 +56,10 @@ void Thread::reader_unlock()
   }
 }
 
-Pointer Thread::dereference(Pointer ptr)
-{
-  auto ptr_copy = GET_COPY(ptr);
-
-  if (IS_UNLOCKED(ptr_copy)) {
-    return ptr;  // it's free
-  }
-
-  if (IS_COPY(ptr_copy)) {
-    return ptr;  // it's already a copy
-  }
-
-  const WriteLogEntryHeader* wl_header = WL_HEADER(ptr_copy);
-
-  if (wl_header->thread_id == thread_id_) {
-    return ptr_copy;  // it's locked by us!
-  }
-
-  const auto& other_ctx = global_ctx_.threads[thread_id_];
-  if (other_ctx->write_clock_ <= local_clock_) {
-    return ptr_copy; /* let's steal this copy */
-  }
-  else {
-    return ptr; /* no stealing */
-  }
-}
-
-Pointer Thread::try_lock(Pointer ptr, const size_t size)
-{
-  is_writer_ = true;
-  ptr = GET_ACTUAL(ptr);  // read the actual object
-
-  auto ptr_copy = GET_COPY(ptr);
-
-  if (!IS_UNLOCKED(ptr_copy)) {
-    const WriteLogEntryHeader* wl_header = WL_HEADER(ptr_copy);
-    if (wl_header->thread_id == thread_id_) {
-      return ptr_copy;  // it's locked by us, let's send our copy
-    }
-
-    this->abort();
-  }
-
-  WriteLogEntryHeader entry;
-  entry.thread_id = thread_id_;
-  entry.actual = ptr;
-  entry.object_size = sizeof(ptr);
-
-  ptr_copy = write_log_.append_log(sizeof(entry), &entry);
-
-  Pointer expected = nullptr;
-
-  if (!OBJ_HEADER(ptr)->copy.compare_exchange_weak(expected, ptr_copy)) {
-    throw runtime_error("compare-exchange failed");
-  }
-
-  write_log_.append_log(size, ptr);
-  return ptr_copy;
-}
-
 bool Thread::compare_objects(Pointer obj1, Pointer obj2)
 {
   return GET_ACTUAL(obj1) == GET_ACTUAL(obj2);
 }
-
-void Thread::assign(Pointer& handle, Pointer obj) { handle = GET_ACTUAL(obj); }
 
 void Thread::writeback_write_log()
 {
@@ -150,6 +75,19 @@ void Thread::writeback_write_log()
     OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlocking the object
 
     dataPtr += header->object_size;
+  }
+}
+
+void Thread::unlock_write_log()
+{
+  uint8_t* dataPtr = write_log_.log.data();
+  uint8_t* end = dataPtr + write_log_.pos;
+
+  while (dataPtr < end) {
+    auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
+    dataPtr += sizeof(WriteLogEntryHeader) + header->object_size;
+
+    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlocking the object  }
   }
 }
 

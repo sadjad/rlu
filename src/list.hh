@@ -4,18 +4,20 @@
 #include "rlu.hh"
 
 namespace rlu {
-namespace list {
 
 template <class T>
 struct Node {
-  T value;
+  T value{};
   Node<T>* next{nullptr};
 };
 
 template <class T>
 class List {
+public:
+  using NodePtr = Node<T>*;
+
 private:
-  Node<T>* head_;
+  NodePtr head_{nullptr};
 
 public:
   List();
@@ -25,10 +27,11 @@ public:
   void add(context::Thread& thread_ctx, T value);
   void erase(context::Thread& thread_ctx, T value);
 
-  Node<T>* head() { return head_; }
+  NodePtr head() { return head_; }
 };
 
-}  // namespace list
+template class List<int32_t>;
+
 }  // namespace rlu
 
 #endif /* LINKED_LIST_HH */
