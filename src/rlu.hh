@@ -246,7 +246,15 @@ T* alloc()
   return reinterpret_cast<T*>(ptr);
 }
 
-void free(Pointer ptr);
+template <class T>
+void free(T* ptr)
+{
+  if (ptr == nullptr) return;
+
+  ptr->~T();
+  util::object_header(ptr)->~ObjectHeader();
+  free(util::object_header(ptr));
+}
 
 }  // namespace mem
 

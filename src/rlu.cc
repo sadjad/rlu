@@ -9,16 +9,6 @@ using namespace std;
 using namespace rlu;
 using namespace rlu::context;
 
-void mem::free(Pointer ptr)
-{
-  if (ptr == nullptr) {
-    return;
-  }
-
-  util::object_header(ptr)->~ObjectHeader();
-  free(util::object_header(ptr));
-}
-
 Thread::Thread(const size_t thread_id, Global& global_context)
     : thread_id_(thread_id), global_ctx_(global_context)
 {
