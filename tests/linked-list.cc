@@ -36,14 +36,26 @@ int main(const int, char*[])
             oss << "[read:" << thread_id << "]";
             auto current = list.head();
 
+            int32_t val = numeric_limits<int32_t>::min();
+
             while (current != nullptr) {
               current = thread_ctx.dereference(current);
               oss << " " << current->value;
+
+              if (current->value < val) {
+                throw runtime_error("inconsistent list");
+              }
+
+              val = current->value;
               current = current->next;
             }
 
             oss << endl;
             cerr << oss.str();
+
+            if (val != numeric_limits<int32_t>::max()) {
+              throw runtime_error("inconsistent list");
+            }
 
             thread_ctx.reader_unlock();
           }
