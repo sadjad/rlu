@@ -21,10 +21,9 @@ void mem::free(Pointer ptr)
 Thread::Thread(const size_t thread_id, Global& global_context)
     : thread_id_(thread_id), global_ctx_(global_context)
 {
-  cerr << "Thread(" << thread_id_ << ")" << endl;
 }
 
-Thread::~Thread() { cerr << "~Thread(" << thread_id_ << ")" << endl; }
+Thread::~Thread() {}
 
 void Thread::reader_lock()
 {
