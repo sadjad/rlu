@@ -15,6 +15,7 @@ void mem::free(Pointer ptr)
     return;
   }
 
+  OBJ_HEADER(ptr)->~ObjectHeader();
   free(OBJ_HEADER(ptr));
 }
 
