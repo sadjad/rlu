@@ -59,7 +59,8 @@ void Thread::writeback_write_log()
     dataPtr += sizeof(WriteLogEntryHeader);
 
     memcpy(header->actual, dataPtr, header->object_size);
-    util::object_header(header->actual)->copy.store(nullptr);  // Unlock the object
+    util::object_header(header->actual)
+        ->copy.store(nullptr);  // Unlock the object
     header->~WriteLogEntryHeader();
 
     dataPtr += header->object_size;
@@ -75,7 +76,8 @@ void Thread::unlock_write_log()
     auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
     dataPtr += sizeof(WriteLogEntryHeader) + header->object_size;
 
-    util::object_header(header->actual)->copy.store(nullptr);  // Unlock the object
+    util::object_header(header->actual)
+        ->copy.store(nullptr);  // Unlock the object
   }
 }
 

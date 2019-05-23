@@ -35,35 +35,44 @@ struct WriteLogEntryHeader {
 
 namespace util {
 
-template <class T> inline ObjectHeader* object_header(T* obj)
+template <class T>
+inline ObjectHeader* object_header(T* obj)
 {
   return reinterpret_cast<ObjectHeader*>(reinterpret_cast<uint8_t*>(obj) -
                                          sizeof(ObjectHeader));
 }
 
-template <class T> inline WriteLogEntryHeader* writelog_header(T* obj)
+template <class T>
+inline WriteLogEntryHeader* writelog_header(T* obj)
 {
   return reinterpret_cast<WriteLogEntryHeader*>(
       reinterpret_cast<uint8_t*>(obj) - sizeof(WriteLogEntryHeader));
 }
 
-template <class T> inline T* get_copy(T* obj)
+template <class T>
+inline T* get_copy(T* obj)
 {
   return reinterpret_cast<T*>(object_header(obj)->copy.load());
 }
 
-template <class T> inline bool is_copy(T* obj)
+template <class T>
+inline bool is_copy(T* obj)
 {
   return obj == reinterpret_cast<void*>(SPECIAL_CONSTANT);
 }
 
-template <class T> inline T* get_actual(T* obj)
+template <class T>
+inline T* get_actual(T* obj)
 {
   return reinterpret_cast<T*>(
       is_copy(get_copy(obj)) ? (writelog_header(obj)->actual) : obj);
 }
 
-template <class T> inline bool is_unlocked(T* obj) { return obj == nullptr; }
+template <class T>
+inline bool is_unlocked(T* obj)
+{
+  return obj == nullptr;
+}
 
 }  // namespace util
 
@@ -85,8 +94,11 @@ private:
     size_t pos{0};
     std::array<uint8_t, WRITE_LOG_SIZE> log;
 
-    template <class T> T* append_header(const uint64_t thread_id, T* ptr);
-    template <class T> void append_log(T* obj);
+    template <class T>
+    T* append_header(const uint64_t thread_id, T* ptr);
+
+    template <class T>
+    void append_log(T* obj);
   };
 
   const uint64_t thread_id_;
@@ -111,9 +123,14 @@ public:
   void reader_lock();
   void reader_unlock();
 
-  template <class T> T* dereference(T* obj);
-  template <class T> bool try_lock(T*& obj);
-  template <class T> void assign(T*& handle, T* obj);
+  template <class T>
+  T* dereference(T* obj);
+
+  template <class T>
+  bool try_lock(T*& obj);
+
+  template <class T>
+  void assign(T*& handle, T* obj);
 
   bool compare_objects(Pointer obj1, Pointer obj2);
   void commit_write_log();
@@ -124,12 +141,14 @@ public:
   void abort();
 };
 
-template <class T> void Thread::assign(T*& handle, T* obj)
+template <class T>
+void Thread::assign(T*& handle, T* obj)
 {
   handle = util::get_actual(obj);
 }
 
-template <class T> T* Thread::dereference(T* ptr)
+template <class T>
+T* Thread::dereference(T* ptr)
 {
   auto ptr_copy = util::get_copy(ptr);
 
@@ -147,7 +166,8 @@ template <class T> T* Thread::dereference(T* ptr)
   }
 }
 
-template <class T> bool Thread::try_lock(T*& original_ptr)
+template <class T>
+bool Thread::try_lock(T*& original_ptr)
 {
   is_writer_ = true;
 
@@ -197,7 +217,8 @@ T* Thread::WriteLog::append_header(const uint64_t thread_id, T* ptr)
   return reinterpret_cast<T*>(log.data() + pos);
 }
 
-template <class T> void Thread::WriteLog::append_log(T* obj)
+template <class T>
+void Thread::WriteLog::append_log(T* obj)
 {
   if (pos + sizeof(T) >= log.size()) {
     throw std::runtime_error("write log full");
@@ -211,7 +232,8 @@ template <class T> void Thread::WriteLog::append_log(T* obj)
 
 namespace mem {
 
-template <class T> T* alloc()
+template <class T>
+T* alloc()
 {
   auto ptr =
       reinterpret_cast<uint8_t*>(malloc(sizeof(ObjectHeader) + sizeof(T)));
