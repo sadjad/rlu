@@ -28,7 +28,7 @@ int main(const int, char*[])
           auto& thread_ctx = *global_ctx.threads[thread_id];
           ostringstream oss;
 
-          this_thread::sleep_for(chrono::milliseconds{100 * thread_id / 8});
+          this_thread::sleep_for(chrono::milliseconds{10 * thread_id / 8});
 
           if (is_reader) {
             thread_ctx.reader_lock();
