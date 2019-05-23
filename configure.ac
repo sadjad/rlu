@@ -37,5 +37,6 @@ AC_TYPE_UINT16_T
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 benchmarks/Makefile
                  tests/Makefile])
 AC_OUTPUT

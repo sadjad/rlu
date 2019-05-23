@@ -21,3 +21,4 @@ Makefile.in
 /test-driver
 /tests/linked-list
 /tests/test-suite.log
+/benchmarks/bench-rlu-list
