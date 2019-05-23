@@ -5,6 +5,7 @@
 
 #include <array>
 #include <atomic>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -31,6 +32,7 @@
                                                 : obj))
 
 #define IS_UNLOCKED(obj) (obj == nullptr)
+#define IS_LOCKED(obj) (obj != nullptr)
 #define IS_COPY(obj) (obj == SPECIAL_CONSTANT)
 
 namespace rlu {
@@ -71,7 +73,8 @@ private:
     template <class T>
     T* append_header(const uint64_t thread_id, T* ptr);
 
-    void append_log(const size_t len, void* buffer);
+    template <class T>
+    void append_log(T* obj);
   };
 
   const uint64_t thread_id_;
@@ -100,7 +103,7 @@ public:
   T* dereference(T* obj);
 
   template <class T>
-  T* try_lock(T* obj);
+  bool try_lock(T*& obj);
 
   template <class T>
   void assign(T*& handle, T* obj);
@@ -140,19 +143,22 @@ T* Thread::dereference(T* ptr)
 }
 
 template <class T>
-T* Thread::try_lock(T* ptr)
+bool Thread::try_lock(T*& original_ptr)
 {
   is_writer_ = true;
+
+  T* ptr = original_ptr;
   ptr = GET_ACTUAL(ptr);          // read the actual object
   auto ptr_copy = GET_COPY(ptr);  // read the copy
 
-  if (!IS_UNLOCKED(ptr_copy)) {
-    const WriteLogEntryHeader* wl_header = WL_HEADER(ptr_copy);
+  if (IS_LOCKED(ptr_copy)) {
+    const auto wl_header = WL_HEADER(ptr_copy);
     if (wl_header->thread_id == thread_id_) {
       return ptr_copy;  // it's locked by us, let's send our copy
     }
 
     this->abort();
+    return false;
   }
 
   ptr_copy = write_log_.append_header(thread_id_, ptr);
@@ -162,8 +168,10 @@ T* Thread::try_lock(T* ptr)
     throw std::runtime_error("compare-exchange failed");
   }
 
-  write_log_.append_log(sizeof(T), ptr);
-  return ptr_copy;
+  write_log_.append_log(ptr);
+  original_ptr = ptr_copy;
+
+  return true;
 }
 
 template <class T>
@@ -173,7 +181,7 @@ T* Thread::WriteLog::append_header(const uint64_t thread_id, T* ptr)
     throw std::runtime_error("write log full");
   }
 
-  auto wl_header = new (log.data() + pos) WriteLogEntryHeader{};
+  auto wl_header = new (log.data() + pos) WriteLogEntryHeader;
   wl_header->thread_id = thread_id;
   wl_header->actual = ptr;
   wl_header->object_size = sizeof(T);
@@ -181,6 +189,17 @@ T* Thread::WriteLog::append_header(const uint64_t thread_id, T* ptr)
   pos += sizeof(WriteLogEntryHeader);
 
   return reinterpret_cast<T*>(log.data() + pos);
+}
+
+template <class T>
+void Thread::WriteLog::append_log(T* obj)
+{
+  if (pos + sizeof(T) >= log.size()) {
+    throw std::runtime_error("write log full");
+  }
+
+  *reinterpret_cast<T*>(log.data() + pos) = *obj;
+  pos += sizeof(T);
 }
 
 }  // namespace context
@@ -194,8 +213,8 @@ T* alloc()
       reinterpret_cast<uint8_t*>(malloc(sizeof(ObjectHeader) + sizeof(T)));
 
   if (ptr != nullptr) {
-    new (ptr) ObjectHeader{};
-    return new (ptr + sizeof(ObjectHeader)) T{};
+    new (ptr) ObjectHeader;
+    return new (ptr + sizeof(ObjectHeader)) T;
   }
 
   return reinterpret_cast<T*>(ptr);

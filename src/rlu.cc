@@ -26,17 +26,6 @@ Thread::Thread(const size_t thread_id, Global& global_context)
 
 Thread::~Thread() { cerr << "~Thread(" << thread_id_ << ")" << endl; }
 
-void Thread::WriteLog::append_log(const size_t len, void* buffer)
-{
-  if (len + pos >= log.size()) {
-    /* log full */
-    throw runtime_error("write log full");
-  }
-
-  memcpy(log.data() + pos, buffer, len);
-  pos += len;
-}
-
 void Thread::reader_lock()
 {
   is_writer_ = false;
@@ -126,6 +115,8 @@ void Thread::abort()
   if (is_writer_) {
     unlock_write_log();
   }
+
+  throw runtime_error("X");
 
   /* XXX retry!? */
 }

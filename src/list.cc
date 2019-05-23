@@ -34,8 +34,7 @@ restart:
   }
 
   if (next->value != value) {
-    if (!thread_ctx.try_lock(prev) or
-        !thread_ctx.try_lock(next)) {
+    if (!thread_ctx.try_lock(prev) || !thread_ctx.try_lock(next)) {
       thread_ctx.abort();
       goto restart;
     }

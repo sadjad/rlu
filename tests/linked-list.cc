@@ -35,16 +35,16 @@ int main(const int, char*[])
           if (reader) {
             thread_ctx.reader_lock();
 
+            oss << "[read:" << thread_id << "]";
             auto current = list.head();
 
-            oss << "[read:" << thread_id << "]";
             while (current != nullptr) {
               current = thread_ctx.dereference(current);
               oss << " " << current->value;
               current = current->next;
             }
-            oss << endl;
 
+            oss << endl;
             cerr << oss.str();
 
             thread_ctx.reader_unlock();
