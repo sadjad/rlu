@@ -7,8 +7,10 @@ namespace rlu {
 
 template <class T>
 struct Node {
-  T value{};
-  Node<T>* next{nullptr};
+  T value;
+  Node<T>* next;
+
+  Node(const T v = {}, Node<T>* next = nullptr) : value(v), next(next) {}
 };
 
 template <class T>

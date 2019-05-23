@@ -11,6 +11,7 @@
 #include <memory>
 #include <stdexcept>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace rlu {
@@ -232,15 +233,15 @@ void Thread::WriteLog::append_log(T* obj)
 
 namespace mem {
 
-template <class T>
-T* alloc()
+template <class T, typename... Args>
+T* alloc(Args&&... args)
 {
   auto ptr =
       reinterpret_cast<uint8_t*>(malloc(sizeof(ObjectHeader) + sizeof(T)));
 
   if (ptr != nullptr) {
     new (ptr) ObjectHeader;
-    return new (ptr + sizeof(ObjectHeader)) T;
+    return new (ptr + sizeof(ObjectHeader)) T(std::forward<Args>(args)...);
   }
 
   return reinterpret_cast<T*>(ptr);

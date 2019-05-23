@@ -7,14 +7,8 @@ template <class T>
 List<T>::List()
 {
   // creating a min-node and a max-node
-  head_ = mem::alloc<Node<T>>();
-  auto tail = mem::alloc<Node<T>>();
-
-  head_->value = numeric_limits<T>::min();
-  head_->next = tail;
-
-  tail->value = numeric_limits<T>::max();
-  tail->next = nullptr;
+  auto tail = mem::alloc<Node<T>>(numeric_limits<T>::max(), nullptr);
+  head_ = mem::alloc<Node<T>>(numeric_limits<T>::min(), tail);
 }
 
 // This code is from Listing (2)
@@ -38,8 +32,7 @@ void List<T>::add(rlu::context::Thread& thread_ctx, const T value)
       add(thread_ctx, value);
     }
 
-    auto node = mem::alloc<Node<T>>();
-    node->value = value;
+    auto node = mem::alloc<Node<T>>(value);
     thread_ctx.assign(node->next, next);
     thread_ctx.assign(prev->next, node);
   }
