@@ -8,7 +8,7 @@
 
 using namespace std;
 
-constexpr size_t NUM_THREADS = 5;
+constexpr size_t NUM_THREADS = 128;
 
 int main(const int, char*[])
 {
@@ -24,15 +24,13 @@ int main(const int, char*[])
 
   for (size_t i = 0; i < NUM_THREADS; i++) {
     threads.emplace_back(
-        [&global_ctx, &list](const size_t thread_id, const bool reader) {
+        [&global_ctx, &list](const size_t thread_id, const bool is_reader) {
           auto& thread_ctx = *global_ctx.threads[thread_id];
           ostringstream oss;
 
-          if (thread_id % 2) {
-            this_thread::sleep_for(1s);
-          }
+          this_thread::sleep_for(chrono::milliseconds{100 * thread_id / 8});
 
-          if (reader) {
+          if (is_reader) {
             thread_ctx.reader_lock();
 
             oss << "[read:" << thread_id << "]";
@@ -50,12 +48,13 @@ int main(const int, char*[])
             thread_ctx.reader_unlock();
           }
           else /* it's a writer */ {
-            list.add(thread_ctx, 10);
-            list.add(thread_ctx, 15);
-            list.add(thread_ctx, 5);
+            list.add(thread_ctx, 8 * thread_id);
+            list.add(thread_ctx, 8 * thread_id + 2);
+            list.add(thread_ctx, 8 * thread_id + 4);
+            list.add(thread_ctx, 8 * thread_id + 6);
           }
         },
-        i, (i != 4));
+        i, i % 2);
   }
 
   for (size_t i = 0; i < NUM_THREADS; i++) {
