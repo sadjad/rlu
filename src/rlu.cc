@@ -81,9 +81,9 @@ Pointer Thread::dereference(Pointer ptr)
     return ptr;  // it's already a copy
   }
 
-  const WriteLogEntryHeader* ws_header = WS_HEADER(ptr_copy);
+  const WriteLogEntryHeader* wl_header = WL_HEADER(ptr_copy);
 
-  if (ws_header->thread_id == thread_id_) {
+  if (wl_header->thread_id == thread_id_) {
     return ptr_copy;  // it's locked by us!
   }
 
@@ -104,8 +104,8 @@ Pointer Thread::try_lock(Pointer ptr, const size_t size)
   auto ptr_copy = GET_COPY(ptr);
 
   if (!IS_UNLOCKED(ptr_copy)) {
-    const WriteLogEntryHeader* ws_header = WS_HEADER(ptr_copy);
-    if (ws_header->thread_id == thread_id_) {
+    const WriteLogEntryHeader* wl_header = WL_HEADER(ptr_copy);
+    if (wl_header->thread_id == thread_id_) {
       return ptr_copy;  // it's locked by us, let's send our copy
     }
 
@@ -136,14 +136,30 @@ bool Thread::compare_objects(Pointer obj1, Pointer obj2)
 
 void Thread::assign(Pointer& handle, Pointer obj) { handle = GET_ACTUAL(obj); }
 
+void Thread::writeback_write_log()
+{
+  uint8_t* dataPtr = write_log_.log.data();
+  uint8_t* end = dataPtr + write_log_.pos;
+
+  while (dataPtr < end) {
+    auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
+
+    dataPtr += sizeof(WriteLogEntryHeader);
+
+    memcpy(header->actual, dataPtr, header->object_size);
+    OBJ_HEADER(header->actual)->copy.store(NULL);  // Unlocking the object
+
+    dataPtr += header->object_size;
+  }
+}
+
 void Thread::commit_write_log()
 {
   write_clock_ = global_ctx_.clock.load(memory_order_consume) + 1;
   global_ctx_.clock.fetch_add(1);
 
   synchronize();
-  write_log_.write_back();
-  unlock_write_log();
+  writeback_write_log();
 
   write_clock_ = numeric_limits<uint64_t>::max();
   swap_write_logs();

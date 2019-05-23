@@ -17,7 +17,7 @@
   reinterpret_cast<ObjectHeader*>(reinterpret_cast<char*>(obj) - \
                                   sizeof(ObjectHeader))
 
-#define WS_HEADER(obj)                                                  \
+#define WL_HEADER(obj)                                                  \
   reinterpret_cast<WriteLogEntryHeader*>(reinterpret_cast<char*>(obj) - \
                                          sizeof(WriteLogEntryHeader))
 
@@ -25,7 +25,7 @@
 #define IS_UNLOCKED(obj) (OBJ_HEADER(obj)->copy.load() == nullptr)
 #define IS_COPY(obj) (obj == SPECIAL_CONSTANT)
 
-#define GET_ACTUAL(obj) (IS_COPY(obj) ? (WS_HEADER(obj)->actual) : obj)
+#define GET_ACTUAL(obj) (IS_COPY(obj) ? (WL_HEADER(obj)->actual) : obj)
 
 namespace rlu {
 
@@ -63,7 +63,6 @@ private:
     std::array<uint8_t, WRITE_LOG_SIZE> log;
 
     Pointer append_log(const size_t len, void* buffer);
-    void write_back();
   };
 
   const uint64_t thread_id_;
@@ -95,6 +94,7 @@ public:
   void assign(Pointer& handle, Pointer obj);
   void commit_write_log();
   void unlock_write_log();
+  void writeback_write_log();
   void swap_write_logs();
   void synchronize();
   void abort();
