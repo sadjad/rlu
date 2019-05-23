@@ -21,8 +21,8 @@
   reinterpret_cast<WriteLogEntryHeader*>(reinterpret_cast<char*>(obj) - \
                                          sizeof(WriteLogEntryHeader))
 
-#define GET_COPY(obj) OBJ_HEADER(obj)->copy
-#define IS_UNLOCKED(obj) (OBJ_HEADER(obj)->copy == nullptr)
+#define GET_COPY(obj) OBJ_HEADER(obj)->copy.load()
+#define IS_UNLOCKED(obj) (OBJ_HEADER(obj)->copy.load() == nullptr)
 #define IS_COPY(obj) (obj == SPECIAL_CONSTANT)
 
 #define GET_ACTUAL(obj) (IS_COPY(obj) ? (WS_HEADER(obj)->actual) : obj)
@@ -32,7 +32,7 @@ namespace rlu {
 using Pointer = void*;
 
 struct ObjectHeader {
-  Pointer copy{nullptr};
+  std::atomic<Pointer> copy{nullptr};
 };
 
 struct WriteLogEntryHeader {
@@ -41,7 +41,7 @@ struct WriteLogEntryHeader {
   Pointer actual{nullptr};
 
   // must be the last one
-  Pointer copy{SPECIAL_CONSTANT};
+  std::atomic<Pointer> copy{SPECIAL_CONSTANT};
 };
 
 namespace context {

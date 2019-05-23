@@ -46,11 +46,10 @@ Pointer Thread::WriteLog::append_log(const size_t len, void* buffer)
     throw runtime_error("write log full");
   }
 
-  Pointer start = log.data();
   memcpy(log.data() + pos, buffer, len);
   pos += len;
 
-  return start;
+  return log.data() + pos;
 }
 
 void Thread::reader_lock()
@@ -118,11 +117,16 @@ Pointer Thread::try_lock(Pointer ptr, const size_t size)
   entry.actual = ptr;
   entry.object_size = sizeof(ptr);
 
-  write_log_.append_log(sizeof(entry), &entry);
+  ptr_copy = write_log_.append_log(sizeof(entry), &entry);
 
-  /* XXX get a lock on ptr */
+  Pointer expected = nullptr;
 
-  return write_log_.append_log(size, ptr);
+  if (!OBJ_HEADER(ptr)->copy.compare_exchange_weak(expected, ptr_copy)) {
+    throw runtime_error("compare-exchange failed");
+  }
+
+  write_log_.append_log(size, ptr);
+  return ptr_copy;
 }
 
 bool Thread::compare_objects(Pointer obj1, Pointer obj2)
