@@ -61,7 +61,10 @@ void Benchmark::Stats::print()
        << percentage(count_contains, total) << "%)" << endl
        << "     Found: " << count_found << " (" << fixed << setprecision(2)
        << percentage(count_found, count_contains) << "%)" << endl
+       << "       Ops: " << total << endl
+       << "      Time: " << d << endl
        << "    Ops/us: " << ops_per_us << endl;
+
 }
 
 void Benchmark::run_rlu()
@@ -81,7 +84,7 @@ void Benchmark::run_rlu()
                           config_.max_value};
 
   /* set the start time */
-  cout << "Starting the benchmark in 1 second..." << endl;
+  cerr << "Starting the benchmark in 1 second..." << endl;
   const clock::time_point experiment_start = clock::now() + 1s;
   const clock::time_point experiment_end = experiment_start + config_.duration;
 
