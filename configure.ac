@@ -27,6 +27,7 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 
 # Checks for libraries.
+PKG_CHECK_MODULES([URCU], [liburcu])
 
 # Checks for header files.
 
