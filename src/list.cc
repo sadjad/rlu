@@ -1,5 +1,7 @@
 #include "list.hh"
 
+#include <random>
+
 using namespace std;
 using namespace rlu;
 
@@ -9,6 +11,35 @@ List<T>::List()
   // creating a min-node and a max-node
   auto tail = mem::alloc<Node<T>>(numeric_limits<T>::max(), nullptr);
   head_ = mem::alloc<Node<T>>(numeric_limits<T>::min(), tail);
+}
+
+/*
+ * creates a list with `n` random numbers (not thread-safe)
+ */
+template <class T>
+List<T>::List(const size_t n, const T min, const T max) : List()
+{
+  random_device dev;
+  mt19937 rng{dev()};
+  uniform_int_distribution<T> distribution{min, max};
+
+  size_t count = 0;
+
+  while (count != n) {
+    const T candidate = distribution(rng);
+    auto prev = head_;
+    auto next = head_->next;
+
+    while (next->value < candidate) {
+      prev = next;
+      next = prev->next;
+    }
+
+    if (next->value != candidate) {
+      count++;
+      prev->next = mem::alloc<Node<T>>(candidate, next);
+    }
+  }
 }
 
 // This code is from Listing (2)

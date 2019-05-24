@@ -23,6 +23,7 @@ private:
 
 public:
   List();
+  List(const size_t n, const T min, const T max);
 
   size_t len() const;
 
