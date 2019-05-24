@@ -163,10 +163,11 @@ T* Thread::dereference(T* ptr)
   if (util::is_unlocked(ptr_copy)) return ptr;  // it's free
   if (util::is_copy(ptr_copy)) return ptr;      // it's already a copy
 
-  if (util::writelog_header(ptr_copy)->thread_id == thread_id_)
-    return ptr_copy;  // locked by us
+  const auto other_id = util::writelog_header(ptr_copy)->thread_id;
 
-  if (global_ctx_.threads[thread_id_]->write_clock_ <= local_clock_) {
+  if (other_id == thread_id_) return ptr_copy;  // locked by us
+
+  if (global_ctx_.threads[other_id]->write_clock_ <= local_clock_) {
     return ptr_copy; /* let's steal this copy */
   }
   else {
