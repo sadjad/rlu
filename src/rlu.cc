@@ -21,7 +21,7 @@ void Thread::reader_lock()
   is_writer_ = false;
   run_count_++;
 
-  local_clock_ = global_ctx_.clock.load();
+  local_clock_ = global_ctx_.clock.load(memory_order_consume);
 }
 
 void Thread::reader_unlock()
@@ -40,7 +40,7 @@ bool Thread::compare_objects(Pointer obj1, Pointer obj2)
 
 void Thread::writeback_write_log()
 {
-  uint8_t* dataPtr = write_log_.log.data();
+  uint8_t* dataPtr = write_log_.log;
   const uint8_t* end = dataPtr + write_log_.pos;
 
   while (dataPtr < end) {
@@ -50,7 +50,7 @@ void Thread::writeback_write_log()
 
     memcpy(header->actual, dataPtr, header->object_size);
     util::object_header(header->actual)
-        ->copy.store(nullptr);  // Unlock the object
+        ->copy.store(nullptr, memory_order_release);  // Unlock the object
     header->~WriteLogEntryHeader();
 
     dataPtr += header->object_size;
@@ -59,7 +59,7 @@ void Thread::writeback_write_log()
 
 void Thread::unlock_write_log()
 {
-  uint8_t* dataPtr = write_log_.log.data();
+  uint8_t* dataPtr = write_log_.log;
   uint8_t* end = dataPtr + write_log_.pos;
 
   while (dataPtr < end) {
@@ -67,14 +67,14 @@ void Thread::unlock_write_log()
     dataPtr += sizeof(WriteLogEntryHeader) + header->object_size;
 
     util::object_header(header->actual)
-        ->copy.store(nullptr);  // Unlock the object
+        ->copy.store(nullptr, memory_order_release);  // Unlock the object
   }
 }
 
 void Thread::commit_write_log()
 {
-  write_clock_ = global_ctx_.clock.load() + 1;
-  global_ctx_.clock.fetch_add(1);
+  write_clock_ = global_ctx_.clock.load(memory_order_consume) + 1;
+  global_ctx_.clock.fetch_add(1, memory_order_release);
 
   synchronize();
   writeback_write_log();
@@ -83,7 +83,13 @@ void Thread::commit_write_log()
   swap_write_logs();
 }
 
-void Thread::swap_write_logs() { swap(write_log_, write_log_quiesce_); }
+void Thread::swap_write_logs() {
+  auto ptr_copy = write_log_.log;
+  write_log_.log = write_log_quiesce_.log;
+  write_log_quiesce_.log = ptr_copy;
+  write_log_quiesce_.pos = write_log_.pos;
+  write_log_.pos = 0;
+ }
 
 void Thread::synchronize()
 {

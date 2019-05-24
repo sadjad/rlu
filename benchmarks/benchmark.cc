@@ -45,7 +45,7 @@ void Benchmark::Stats::print()
   const float ops_per_us = (float)total / d;
 
   auto percentage = [](const int n, const int total) -> double {
-    return total ? (((int)(100 * (100.0 * n / total))) / 100.0) : 0.0;
+    return total ? (100.0 * n / total) : 0.0;
   };
 
   cout << endl

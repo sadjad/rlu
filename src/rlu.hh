@@ -53,7 +53,8 @@ inline WriteLogEntryHeader* writelog_header(T* obj)
 template <class T>
 inline T* get_copy(T* obj)
 {
-  return reinterpret_cast<T*>(object_header(obj)->copy.load());
+  return reinterpret_cast<T*>(
+      object_header(obj)->copy.load(std::memory_order_consume));
 }
 
 template <class T>
@@ -93,7 +94,13 @@ class Thread {
 private:
   struct WriteLog {
     size_t pos{0};
-    std::array<uint8_t, WRITE_LOG_SIZE> log;
+    uint8_t* log{nullptr};
+
+    WriteLog() { log = new uint8_t[WRITE_LOG_SIZE]; }
+    ~WriteLog() { delete[] log; }
+
+    WriteLog(const WriteLog&) = delete;
+    WriteLog& operator=(const WriteLog&) = delete;
 
     template <class T>
     T* append_header(const uint64_t thread_id, T* ptr);
@@ -190,7 +197,8 @@ bool Thread::try_lock(T*& original_ptr)
   ptr_copy = write_log_.append_header(thread_id_, ptr);
   void* expt = nullptr;
 
-  if (!util::object_header(ptr)->copy.compare_exchange_weak(expt, ptr_copy)) {
+  if (!util::object_header(ptr)->copy.compare_exchange_weak(
+          expt, ptr_copy, std::memory_order_release)) {
     this->abort();
     return false;
   }
@@ -204,28 +212,28 @@ bool Thread::try_lock(T*& original_ptr)
 template <class T>
 T* Thread::WriteLog::append_header(const uint64_t thread_id, T* ptr)
 {
-  if (pos + sizeof(WriteLogEntryHeader) >= log.size()) {
+  if (pos + sizeof(WriteLogEntryHeader) >= WRITE_LOG_SIZE) {
     throw std::runtime_error("write log full");
   }
 
-  auto wl_header = new (log.data() + pos) WriteLogEntryHeader;
+  auto wl_header = new (log + pos) WriteLogEntryHeader;
   wl_header->thread_id = thread_id;
   wl_header->actual = ptr;
   wl_header->object_size = sizeof(T);
 
   pos += sizeof(WriteLogEntryHeader);
 
-  return reinterpret_cast<T*>(log.data() + pos);
+  return reinterpret_cast<T*>(log + pos);
 }
 
 template <class T>
 void Thread::WriteLog::append_log(T* obj)
 {
-  if (pos + sizeof(T) >= log.size()) {
+  if (pos + sizeof(T) >= WRITE_LOG_SIZE) {
     throw std::runtime_error("write log full");
   }
 
-  *reinterpret_cast<T*>(log.data() + pos) = *obj;
+  *reinterpret_cast<T*>(log + pos) = *obj;
   pos += sizeof(T);
 }
 
