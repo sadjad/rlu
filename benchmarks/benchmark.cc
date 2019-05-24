@@ -35,6 +35,7 @@ void Benchmark::Stats::merge(const Stats &other)
   count_add += other.count_add;
   count_erase += other.count_erase;
   count_contains += other.count_contains;
+  count_found += other.count_found;
 }
 
 void Benchmark::Stats::print()
@@ -52,11 +53,13 @@ void Benchmark::Stats::print()
        << "  Duration: " << fixed << setprecision(3) << (d / 1e6) << "s" << endl
        << "     Total: " << total << endl
        << "       Add: " << count_add << " (" << fixed << setprecision(2)
-       << percentage(count_add, total) << ")" << endl
+       << percentage(count_add, total) << "%)" << endl
        << "     Erase: " << count_erase << " (" << fixed << setprecision(2)
-       << percentage(count_erase, total) << ")" << endl
+       << percentage(count_erase, total) << "%)" << endl
        << "  Contains: " << count_contains << " (" << fixed << setprecision(2)
-       << percentage(count_contains, total) << ")" << endl
+       << percentage(count_contains, total) << "%)" << endl
+       << "     Found: " << count_found << " (" << fixed << setprecision(2)
+       << percentage(count_found, count_contains) << "%)" << endl
        << endl
        << "    Ops/us: " << ops_per_us << endl;
 }
@@ -96,8 +99,13 @@ void Benchmark::run()
             const bool is_writer = coinflip(config_.update_ratio);
             const auto randval = randint(config_.min_value, config_.max_value);
 
-            if (is_writer) {
+            if (!is_writer) {
+              thread_stats.count_found += list.contains(thread_ctx, randval);
+              thread_stats.count_contains++;
+            }
+            else {
               const bool is_adder = coinflip();
+
               if (is_adder) {
                 list.add(thread_ctx, randval);
                 thread_stats.count_add++;
@@ -106,10 +114,6 @@ void Benchmark::run()
                 list.erase(thread_ctx, randval);
                 thread_stats.count_erase++;
               }
-            }
-            else { /* reader */
-              list.contains(thread_ctx, randval);
-              thread_stats.count_contains++;
             }
           }
 

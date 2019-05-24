@@ -25,6 +25,7 @@ public:
     size_t count_add{0};
     size_t count_erase{0};
     size_t count_contains{0};
+    size_t count_found{0};
 
     void merge(const Stats& stats);
     void print();
