@@ -78,8 +78,8 @@ void Benchmark::run()
                           config_.max_value};
 
   /* set the start time */
-  cout << "Starting the benchmark in 5 seconds..." << endl;
-  const clock::time_point experiment_start = clock::now() + 5s;
+  cout << "Starting the benchmark in 2 seconds..." << endl;
+  const clock::time_point experiment_start = clock::now() + 2s;
   const clock::time_point experiment_end = experiment_start + config_.duration;
 
   /* starting the threads */
