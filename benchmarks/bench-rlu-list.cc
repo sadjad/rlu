@@ -1,11 +1,20 @@
 #include <getopt.h>
 #include <chrono>
+#include <random>
 #include <iostream>
 #include <stdexcept>
 
 #include "list.hh"
 
 using namespace std;
+
+int32_t randint(const int32_t min, const int32_t max)
+{
+  static thread_local random_device dev;
+  static thread_local mt19937 rng{dev()};
+  uniform_int_distribution<int32_t> distribution(min, max);
+  return distribution(rng);
+}
 
 inline void print_exception(const char *argv0, const exception &e)
 {
