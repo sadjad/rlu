@@ -18,6 +18,7 @@ namespace rlu {
 
 constexpr intptr_t SPECIAL_CONSTANT = 0x1020304050607080ull;
 constexpr size_t WRITE_LOG_SIZE = 1024 * 1024;  // 1 MB
+constexpr size_t MAX_THREADS = 256;
 
 using Pointer = void*;
 

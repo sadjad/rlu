@@ -93,8 +93,7 @@ void Thread::swap_write_logs() {
 
 void Thread::synchronize()
 {
-  vector<uint64_t> sync_counts;
-  sync_counts.resize(global_ctx_.threads.size(), 0);
+  uint64_t sync_counts[MAX_THREADS];
 
   for (const auto& thread : global_ctx_.threads) {
     sync_counts[thread->thread_id()] = thread->run_count();
