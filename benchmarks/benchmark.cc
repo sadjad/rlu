@@ -146,7 +146,7 @@ void Benchmark::run_rcu()
                           config_.max_value};
 
   /* set the start time */
-  cout << "Starting the benchmark in 1 second..." << endl;
+  cerr << "Starting the benchmark in 1 second..." << endl;
   const clock::time_point experiment_start = clock::now() + 1s;
   const clock::time_point experiment_end = experiment_start + config_.duration;
 
