@@ -50,7 +50,12 @@ void Benchmark::Stats::print()
     return total ? (100.0 * n / total) : 0.0;
   };
 
-  cout << endl
+  cout << "# ops,time,ops_per_us,add,erase,contains,found" << endl;
+
+  cout << total << "," << d << "," << ops_per_us << count_add << ","
+       << count_erase << "," << count_contains << "," << count_found << endl;
+
+  cerr << endl
        << "  Duration: " << fixed << setprecision(3) << (d / 1e6) << "s" << endl
        << "     Total: " << total << endl
        << "       Add: " << count_add << " (" << fixed << setprecision(2)
