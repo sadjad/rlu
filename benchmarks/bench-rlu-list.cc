@@ -1,20 +1,10 @@
 #include <getopt.h>
-#include <chrono>
-#include <random>
 #include <iostream>
 #include <stdexcept>
 
-#include "list.hh"
+#include "benchmark.hh"
 
 using namespace std;
-
-int32_t randint(const int32_t min, const int32_t max)
-{
-  static thread_local random_device dev;
-  static thread_local mt19937 rng{dev()};
-  uniform_int_distribution<int32_t> distribution(min, max);
-  return distribution(rng);
-}
 
 inline void print_exception(const char *argv0, const exception &e)
 {
@@ -30,17 +20,12 @@ void usage(const char *argv0, const int exit_code)
        << "  -r, --update-ratio <R=0.02>" << endl
        << "  -m, --min-value <V=-1024>" << endl
        << "  -M, --max-value <V=1023>" << endl
+       << "  -i, --initial-size <S=512>" << endl
+       << "  -d, --duration <D=2s>" << endl
        << endl;
 
   exit(exit_code);
 }
-
-struct BenchmarkConfig {
-  size_t n_threads = 8;
-  float update_ratio = 0.02;
-  int32_t min_value = -1024;
-  int32_t max_value = 1023;
-};
 
 int main(int argc, char *argv[])
 {
@@ -53,16 +38,18 @@ int main(int argc, char *argv[])
       usage(argv[0], EXIT_FAILURE);
     }
 
-    BenchmarkConfig config;
+    Benchmark::Config config;
 
     struct option long_options[] = {
         {"threads", required_argument, nullptr, 'n'},
         {"update-ratio", required_argument, nullptr, 'r'},
-        {"min-val", required_argument, nullptr, 'm'},
-        {"max-val", required_argument, nullptr, 'M'}};
+        {"min-value", required_argument, nullptr, 'm'},
+        {"max-value", required_argument, nullptr, 'M'},
+        {"initial-size", required_argument, nullptr, 'i'},
+        {"duration", required_argument, nullptr, 'd'}};
 
     while (true) {
-      const int opt = getopt_long(argc, argv, "n:r:m:M:h", long_options, 0);
+      const int opt = getopt_long(argc, argv, "n:r:m:M:i:d:h", long_options, 0);
 
       if (opt == -1) break;
 
@@ -72,6 +59,8 @@ int main(int argc, char *argv[])
       case 'r': config.update_ratio = stof(optarg); break;
       case 'm': config.min_value = stol(optarg); break;
       case 'M': config.max_value = stol(optarg); break;
+      case 'i': config.initial_size = stoul(optarg); break;
+      case 'd': config.duration = chrono::seconds{stoul(optarg)}; break;
       case 'h': usage(argv[0], EXIT_SUCCESS); break;
       default: usage(argv[0], EXIT_FAILURE);
       }
@@ -82,6 +71,9 @@ int main(int argc, char *argv[])
         config.min_value > config.max_value) {
       usage(argv[0], EXIT_FAILURE);
     }
+
+    Benchmark benchmark{config};
+    benchmark.run();
   }
   catch (exception &ex) {
     print_exception(argv[0], ex);
