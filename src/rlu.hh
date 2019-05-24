@@ -114,9 +114,9 @@ private:
   Global& global_ctx_;
 
   bool is_writer_{false};
-  uint64_t local_clock_{0};
-  uint64_t run_count_{0};
-  uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
+  volatile uint64_t run_count_{0};
+  volatile uint64_t local_clock_{0};
+  volatile uint64_t write_clock_{std::numeric_limits<uint64_t>::max()};
 
   WriteLog write_log_{};
   WriteLog write_log_quiesce_{};
@@ -126,8 +126,6 @@ public:
   ~Thread();
 
   size_t thread_id() const { return thread_id_; }
-  uint64_t run_count() const { return run_count_; }
-  uint64_t write_clock() const { return write_clock_; }
 
   void reader_lock();
   void reader_unlock();
@@ -192,7 +190,6 @@ bool Thread::try_lock(T*& original_ptr)
       return true;
     }
 
-    this->abort();
     return false;
   }
 
@@ -201,7 +198,6 @@ bool Thread::try_lock(T*& original_ptr)
 
   if (!util::object_header(ptr)->copy.compare_exchange_weak(
           expt, ptr_copy, std::memory_order_release)) {
-    this->abort();
     return false;
   }
 

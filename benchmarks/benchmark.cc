@@ -85,6 +85,8 @@ void Benchmark::run()
   const clock::time_point experiment_start = clock::now() + 1s;
   const clock::time_point experiment_end = experiment_start + config_.duration;
 
+  __sync_synchronize();
+
   /* starting the threads */
   for (size_t i = 0; i < config_.n_threads; i++) {
     thread_stats.emplace_back(async(

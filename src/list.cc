@@ -112,7 +112,7 @@ bool List<T>::contains(context::Thread& thread_ctx, const T value)
   thread_ctx.reader_lock();
   List<T>::NodePtr node = thread_ctx.dereference(head_)->next;  // skip the head
 
-  for (node = head_; node != nullptr; node = node->next) {
+  for (; node != nullptr; node = node->next) {
     node = thread_ctx.dereference(node);
     if (node->value >= value) break;
   }

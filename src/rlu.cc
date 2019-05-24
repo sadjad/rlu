@@ -21,7 +21,7 @@ void Thread::reader_lock()
   is_writer_ = false;
   run_count_++;
 
-  local_clock_ = global_ctx_.clock.load(memory_order_consume);
+  local_clock_ = global_ctx_.clock.load();
 }
 
 void Thread::reader_unlock()
@@ -45,7 +45,6 @@ void Thread::writeback_write_log()
 
   while (dataPtr < end) {
     auto header = reinterpret_cast<WriteLogEntryHeader*>(dataPtr);
-
     dataPtr += sizeof(WriteLogEntryHeader);
 
     memcpy(header->actual, dataPtr, header->object_size);
@@ -74,7 +73,7 @@ void Thread::unlock_write_log()
 void Thread::commit_write_log()
 {
   write_clock_ = global_ctx_.clock.load(memory_order_consume) + 1;
-  global_ctx_.clock.fetch_add(1, memory_order_release);
+  global_ctx_.clock.fetch_add(1);
 
   synchronize();
   writeback_write_log();
@@ -83,27 +82,29 @@ void Thread::commit_write_log()
   swap_write_logs();
 }
 
-void Thread::swap_write_logs() {
+void Thread::swap_write_logs()
+{
   auto ptr_copy = write_log_.log;
   write_log_.log = write_log_quiesce_.log;
   write_log_quiesce_.log = ptr_copy;
   write_log_quiesce_.pos = write_log_.pos;
   write_log_.pos = 0;
- }
+}
 
 void Thread::synchronize()
 {
   uint64_t sync_counts[MAX_THREADS];
 
   for (const auto& thread : global_ctx_.threads) {
-    sync_counts[thread->thread_id()] = thread->run_count();
+    sync_counts[thread->thread_id_] = thread->run_count_;
   }
 
   for (const auto& thread : global_ctx_.threads) {
-    while (true) {
-      if (sync_counts[thread->thread_id()] % 2 == 0) break;
-      if (sync_counts[thread->thread_id()] != thread->run_count()) break;
-      if (write_clock_ <= thread->write_clock()) break;
+    if (thread->thread_id_ == thread_id_) continue;
+
+    while (sync_counts[thread->thread_id_] % 2 != 0) {
+      if (sync_counts[thread->thread_id_] != thread->run_count_) break;
+      if (write_clock_ <= thread->local_clock_) break;
     }
   }
 }
@@ -111,6 +112,7 @@ void Thread::synchronize()
 void Thread::abort()
 {
   run_count_++;
+
   if (is_writer_) {
     unlock_write_log();
     write_log_.pos = 0;
