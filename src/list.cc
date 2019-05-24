@@ -14,9 +14,10 @@ List<T>::List()
 // This code is from Listing (2)
 
 template <class T>
-void List<T>::add(rlu::context::Thread& thread_ctx, const T value)
+bool List<T>::add(rlu::context::Thread& thread_ctx, const T value)
 {
 restart:
+  bool added = false;
   thread_ctx.reader_lock();
 
   auto prev = thread_ctx.dereference(head_);
@@ -36,9 +37,11 @@ restart:
     auto node = mem::alloc<Node<T>>(value);
     thread_ctx.assign(node->next, next);
     thread_ctx.assign(prev->next, node);
+    added = true;
   }
 
   thread_ctx.reader_unlock();
+  return added;
 }
 
 template <class T>
@@ -62,11 +65,10 @@ restart:
       goto restart;
     }
 
-    found = true;
-
     auto node = thread_ctx.dereference(next->next);
     thread_ctx.assign(prev->next, node);
     mem::free(next);
+    found = true;
   }
 
   thread_ctx.reader_unlock();

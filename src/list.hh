@@ -26,7 +26,7 @@ public:
 
   size_t len() const;
 
-  void add(context::Thread& thread_ctx, const T value);
+  bool add(context::Thread& thread_ctx, const T value);
   bool erase(context::Thread& thread_ctx, const T value);
   bool contains(context::Thread& thread_ctx, const T value);
 
