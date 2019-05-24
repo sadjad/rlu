@@ -61,7 +61,6 @@ void Benchmark::Stats::print()
        << percentage(count_contains, total) << "%)" << endl
        << "     Found: " << count_found << " (" << fixed << setprecision(2)
        << percentage(count_found, count_contains) << "%)" << endl
-       << endl
        << "    Ops/us: " << ops_per_us << endl;
 }
 

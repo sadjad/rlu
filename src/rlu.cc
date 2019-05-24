@@ -49,7 +49,7 @@ void Thread::writeback_write_log()
 
     memcpy(header->actual, dataPtr, header->object_size);
     util::object_header(header->actual)
-        ->copy.store(nullptr, memory_order_release);  // Unlock the object
+        ->copy.store(nullptr);  // Unlock the object
     header->~WriteLogEntryHeader();
 
     dataPtr += header->object_size;
@@ -66,13 +66,13 @@ void Thread::unlock_write_log()
     dataPtr += sizeof(WriteLogEntryHeader) + header->object_size;
 
     util::object_header(header->actual)
-        ->copy.store(nullptr, memory_order_release);  // Unlock the object
+        ->copy.store(nullptr);  // Unlock the object
   }
 }
 
 void Thread::commit_write_log()
 {
-  write_clock_ = global_ctx_.clock.load(memory_order_consume) + 1;
+  write_clock_ = global_ctx_.clock.load() + 1;
   global_ctx_.clock.fetch_add(1);
 
   synchronize();

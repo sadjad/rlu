@@ -54,8 +54,7 @@ inline WriteLogEntryHeader* writelog_header(T* obj)
 template <class T>
 inline T* get_copy(T* obj)
 {
-  return reinterpret_cast<T*>(
-      object_header(obj)->copy.load(std::memory_order_consume));
+  return reinterpret_cast<T*>(object_header(obj)->copy.load());
 }
 
 template <class T>
@@ -196,8 +195,7 @@ bool Thread::try_lock(T*& original_ptr)
   ptr_copy = write_log_.append_header(thread_id_, ptr);
   void* expt = nullptr;
 
-  if (!util::object_header(ptr)->copy.compare_exchange_weak(
-          expt, ptr_copy, std::memory_order_release)) {
+  if (!util::object_header(ptr)->copy.compare_exchange_weak(expt, ptr_copy)) {
     return false;
   }
 
