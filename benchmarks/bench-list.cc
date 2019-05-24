@@ -13,7 +13,7 @@ inline void print_exception(const char *argv0, const exception &e)
 
 void usage(const char *argv0, const int exit_code)
 {
-  cerr << "usage: " << argv0 << " [OPTIONS]" << endl
+  cerr << "usage: " << argv0 << " (rlu|rcu) [OPTIONS]" << endl
        << endl
        << "options:" << endl
        << "  -n, --threads <N=8>" << endl
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
       abort();
     }
 
-    if (argc < 1) {
+    if (argc < 2) {
       usage(argv[0], EXIT_FAILURE);
     }
 
@@ -72,8 +72,22 @@ int main(int argc, char *argv[])
       usage(argv[0], EXIT_FAILURE);
     }
 
+    if (optind >= argc) {
+      usage(argv[0], EXIT_FAILURE);
+    }
+
+    string mode = argv[optind];
     Benchmark benchmark{config};
-    benchmark.run();
+
+    if (mode == "rcu") {
+      benchmark.run_rcu();
+    }
+    else if (mode == "rlu") {
+      benchmark.run_rlu();
+    }
+    else {
+      usage(argv[0], EXIT_FAILURE);
+    }
   }
   catch (exception &ex) {
     print_exception(argv[0], ex);

@@ -37,7 +37,8 @@ private:
 
 public:
   Benchmark(const Config& config) : config_(config) {}
-  void run();
+  void run_rlu();
+  void run_rcu();
 };
 
 #endif /* BENCHMARK_HH */

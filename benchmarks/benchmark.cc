@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "list.hh"
+#include "rcu-list.hh"
 #include "rlu.hh"
 
 using namespace std;
@@ -64,7 +65,7 @@ void Benchmark::Stats::print()
        << "    Ops/us: " << ops_per_us << endl;
 }
 
-void Benchmark::run()
+void Benchmark::run_rlu()
 {
   vector<future<Stats>> thread_stats;
 
@@ -123,6 +124,73 @@ void Benchmark::run()
           return thread_stats;
         },
         i, ref(*global_ctx.threads[i])));
+  }
+
+  for (auto &waitable : thread_stats) {
+    aggregate_.merge(waitable.get());
+  }
+
+  aggregate_.print();
+}
+
+void Benchmark::run_rcu()
+{
+  vector<future<Stats>> thread_stats;
+
+  rcu_init();
+
+  /* create the data structure */
+  rcu::List<int32_t> list{config_.initial_size, config_.min_value,
+                          config_.max_value};
+
+  /* set the start time */
+  cout << "Starting the benchmark in 1 second..." << endl;
+  const clock::time_point experiment_start = clock::now() + 1s;
+  const clock::time_point experiment_end = experiment_start + config_.duration;
+
+  __sync_synchronize();
+
+  /* starting the threads */
+  for (size_t i = 0; i < config_.n_threads; i++) {
+    thread_stats.emplace_back(async(
+        launch::async,
+        [&](const size_t) {
+          Stats thread_stats;
+
+          rcu_register_thread();
+
+          this_thread::sleep_until(experiment_start);
+          thread_stats.start = clock::now();
+
+          while (clock::now() < experiment_end) {
+            const bool is_writer = coinflip(config_.update_ratio);
+            const auto randval = randint(config_.min_value, config_.max_value);
+
+            if (!is_writer) {
+              thread_stats.count_found += list.contains(randval);
+              thread_stats.count_contains++;
+            }
+            else {
+              const bool is_adder = coinflip();
+
+              if (is_adder) {
+                list.add(randval);
+                thread_stats.count_add++;
+              }
+              else {
+                list.erase(randval);
+                thread_stats.count_erase++;
+              }
+            }
+          }
+
+          thread_stats.end = clock::now();
+
+          rcu_unregister_thread();
+
+          return thread_stats;
+        },
+        i));
   }
 
   for (auto &waitable : thread_stats) {
