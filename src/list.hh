@@ -1,5 +1,5 @@
-#ifndef LINKED_LIST_HH
-#define LINKED_LIST_HH
+#ifndef LIST_HH
+#define LIST_HH
 
 #include "rlu.hh"
 
@@ -38,4 +38,4 @@ template class List<int32_t>;
 
 }  // namespace rlu
 
-#endif /* LINKED_LIST_HH */
+#endif /* LIST_HH */
