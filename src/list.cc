@@ -109,13 +109,22 @@ restart:
 template <class T>
 bool List<T>::contains(context::Thread& thread_ctx, const T value)
 {
+  bool found = false;
   thread_ctx.reader_lock();
 
   for (auto node = head_; node != nullptr; node = node->next) {
     node = thread_ctx.dereference(node);
-    if (node->value == value) return true;
+
+    if (node->value > value) {
+      /* we should have already found the value, but we didn't, it's too late */
+      break;
+    }
+    else if (node->value == value) {
+      found = true;
+      break;
+    }
   }
 
   thread_ctx.reader_unlock();
-  return false;
+  return found;
 }
