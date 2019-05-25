@@ -69,6 +69,9 @@ bool List<T>::add(const T value)
 template <class T>
 bool List<T>::erase(const T value)
 {
+  static thread_local NodePtr to_free[2048];
+  static thread_local size_t tf_index = 0;
+
   bool erased = false;
 
   unique_lock<mutex> lock{write_mutex_};
@@ -83,7 +86,17 @@ bool List<T>::erase(const T value)
 
   if (next->value == value) {
     prev->next = next->next;
-    delete[] next;
+
+    /* reducing the cost of synchronization, by only doing it every once in a
+       while */
+    to_free[tf_index++] = next;
+
+    if (tf_index >= 2048) {
+      synchronize_rcu();
+      for (size_t i = 0; i < tf_index; i++) delete (NodePtr)to_free[i];
+      tf_index = 0;
+    }
+
     erased = true;
   }
 
