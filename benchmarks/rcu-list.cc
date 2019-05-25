@@ -87,6 +87,7 @@ bool List<T>::erase(const T value)
   if (next->value == value) {
     prev->next = next->next;
 
+    lock.unlock();
     /* reducing the cost of synchronization, by only doing it every once in a
        while */
     to_free[tf_index++] = next;
