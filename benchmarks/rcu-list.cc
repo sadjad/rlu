@@ -42,8 +42,6 @@ List<T>::List(const size_t n, const T min, const T max) : List()
   }
 }
 
-// This code is from Listing (2)
-
 template <class T>
 bool List<T>::add(const T value)
 {

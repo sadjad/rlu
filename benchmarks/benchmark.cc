@@ -52,7 +52,7 @@ void Benchmark::Stats::print()
 
   cout << "# ops,time,ops_per_us,add,erase,contains,found" << endl;
 
-  cout << total << "," << d << "," << ops_per_us << count_add << ","
+  cout << total << "," << d << "," << ops_per_us << "," << count_add << ","
        << count_erase << "," << count_contains << "," << count_found << endl;
 
   cerr << endl
