@@ -78,6 +78,10 @@ restart:
 template <class T>
 bool List<T>::erase(context::Thread& thread_ctx, const T value)
 {
+  constexpr size_t TO_FREE_SIZE = 2048;
+  static thread_local NodePtr to_free[TO_FREE_SIZE];
+  static thread_local size_t tf_index = 0;
+
 restart:
   bool found = false;
   thread_ctx.reader_lock();
@@ -98,11 +102,17 @@ restart:
 
     auto node = thread_ctx.dereference(next->next);
     thread_ctx.assign(prev->next, node);
-    mem::free(next);
+    to_free[tf_index++] = next;
     found = true;
   }
 
   thread_ctx.reader_unlock();
+
+  if (tf_index >= TO_FREE_SIZE) {
+    for (size_t i = 0; i < tf_index; i++) mem::free(to_free[i]);
+    tf_index = 0;
+  }
+
   return found;
 }
 
